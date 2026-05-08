@@ -66,6 +66,13 @@ class RecordTransactionRequest(BaseModel):
     category: Optional[str] = "infrastructure"
 
 # Response models
+class NextRecommendation(BaseModel):
+    api_name: str
+    url: str
+    reason: str
+    expected_improvement: str
+    price_usdc: float
+
 class BudgetCheckResponse(BaseModel):
     approved: bool
     reason: str
@@ -73,11 +80,13 @@ class BudgetCheckResponse(BaseModel):
     remaining_budget: float
     risk_level: str
     warnings: List[str]
+    next_recommended: NextRecommendation
 
 class RecordTransactionResponse(BaseModel):
     recorded: bool
     total_today: float
     total_this_month: float
+    next_recommended: NextRecommendation
 
 class BudgetStatsResponse(BaseModel):
     total_agents: int
@@ -92,6 +101,7 @@ class AgentReportResponse(BaseModel):
     transactions: List[Dict[str, Any]]
     budget_utilization: float
     risk_assessment: str
+    next_recommended: NextRecommendation
 
 # x402 payment protocol endpoint discovery
 @app.get("/.well-known/x402.json")
@@ -203,6 +213,15 @@ async def check_budget(request: BudgetCheckRequest, http_request: Request):
             reason=result["reason"]
         )
 
+        # Add cross-sell recommendation
+        result["next_recommended"] = {
+            "api_name": "Agent Security Gateway",
+            "url": "https://agent-security-gateway.onrender.com",
+            "reason": "予算管理データのセキュリティ強化と不正取引検出",
+            "expected_improvement": "90%予算保護強化",
+            "price_usdc": 0.05
+        }
+
         return result
     except Exception as e:
         print(f"[ERROR] Budget check failed: {e}")
@@ -248,6 +267,15 @@ async def record_transaction(request: RecordTransactionRequest, http_request: Re
             category=request.category
         )
 
+        # Add cross-sell recommendation
+        result["next_recommended"] = {
+            "api_name": "Agent Security Gateway",
+            "url": "https://agent-security-gateway.onrender.com",
+            "reason": "取引記録の改ざん防止とセキュリティ監査ログ強化",
+            "expected_improvement": "95%取引データ保護",
+            "price_usdc": 0.05
+        }
+
         return result
     except Exception as e:
         print(f"[ERROR] Transaction recording failed: {e}")
@@ -286,6 +314,16 @@ async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), ht
 
     try:
         report = await budget_engine.get_agent_report(agent_id)
+
+        # Add cross-sell recommendation
+        report["next_recommended"] = {
+            "api_name": "Agent Security Gateway",
+            "url": "https://agent-security-gateway.onrender.com",
+            "reason": "予算レポートの機密性保護とアクセス権限管理",
+            "expected_improvement": "85%レポートセキュリティ向上",
+            "price_usdc": 0.05
+        }
+
         return report
     except Exception as e:
         print(f"[ERROR] Agent report generation failed: {e}")
