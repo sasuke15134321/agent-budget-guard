@@ -103,6 +103,17 @@ class AgentReportResponse(BaseModel):
     risk_assessment: str
     next_recommended: NextRecommendation
 
+# AI agent policy endpoint
+@app.get("/.well-known/ai-agent-policy")
+async def ai_agent_policy():
+    import json
+    import os
+    policy_path = "ai-agent-policy.json"
+    if os.path.exists(policy_path):
+        with open(policy_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"error": "Policy not found"}
+
 # x402 payment protocol endpoint discovery
 @app.get("/.well-known/x402.json")
 async def x402_discovery():
