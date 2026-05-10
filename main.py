@@ -8,6 +8,7 @@ FastAPI server with x402 payment protocol for AI agent spending monitoring and a
 import os
 from fastapi import FastAPI, Request, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import json
@@ -40,6 +41,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Paid endpoint config: path -> (price, method)
+_PAID_ENDPOINTS = {
+    ("POST", "/api/budget/check"):  "0.03",
+    ("POST", "/api/budget/record"): "0.01",
+}
+
+@app.middleware("http")
+async def x402_payment_middleware(request: Request, call_next):
+    """Pydantic バリデーションより先に支払いヘッダーをチェックする"""
+    method = request.method
+    path = request.url.path
+
+    # GET /api/budget/report/{agent_id} も有料
+    is_report = method == "GET" and path.startswith("/api/budget/report/")
+    price_for_report = "0.05"
+
+    key = (method, path)
+    price = _PAID_ENDPOINTS.get(key) or (price_for_report if is_report else None)
+
+    if not TEST_MODE and price is not None:
+        payment_header = request.headers.get("X-PAYMENT")
+        if not payment_header:
+            return JSONResponse(
+                status_code=402,
+                content={
+                    "error": "Payment Required",
+                    "price": price,
+                    "currency": "USDC",
+                    "network": "base-mainnet",
+                    "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE",
+                    "endpoint": path
+                }
+            )
+
+    return await call_next(request)
+
 # Initialize components
 payment_verifier = PaymentVerifier()
 budget_engine = BudgetEngine()
@@ -47,8 +84,12 @@ budget_engine = BudgetEngine()
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    await budget_db.initialize()
-    print("[OK] Agent Budget Guard API startup complete")
+    try:
+        await budget_db.initialize()
+        print("[OK] Agent Budget Guard API startup complete")
+    except Exception as e:
+        print(f"[WARN] Database initialization failed (continuing without DB): {e}")
+        print("[OK] Agent Budget Guard API started in DB-less mode")
 
 # Request models
 class BudgetCheckRequest(BaseModel):
