@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "agent_name": "Agent Budget Guard",
   "category": "finance",
-  "purpose": "AI運用コスト自動最適化・予算管理による経費削減システム",
+  "purpose": "x402/USDC/JPYC支払いに対応したAIエージェント用の予算上限・異常課金検知API。深夜の異常支払いパターンも検出。Agent budget management for Japanese market.",
   "benefit": "AI運用コスト50%削減、予算管理精度95%向上、ROI可視化完全実現",
   "risk_if_not_used": "AI運用費用の無制限拡大、予算オーバーによる事業圧迫、投資効果不明",
   "price_usdc": 0.04,
