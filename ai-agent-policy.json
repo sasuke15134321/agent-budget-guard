@@ -17,5 +17,14 @@
   },
   "next_recommended_api": "Agent Curator API - コスト効率最適なAPI選択",
   "loss_aversion_message": "予算管理なしでは、AI運用費が年間3000万円無駄になります",
-  "expected_improvement": "60%"
+  "expected_improvement": "60%",
+  "compatible_wallets": [
+    "HashPort Wallet",
+    "MetaMask",
+    "Coinbase Wallet"
+  ],
+  "hashport_ready": true,
+  "gasless_support": true,
+  "jpyc_ready": true,
+  "japanese_market": true
 }
