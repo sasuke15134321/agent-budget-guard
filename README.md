@@ -1,3 +1,7 @@
+> JPYC x402 payments are now live on Polygon mainnet.
+> Agent Budget Guard is the pre-payment control layer for
+> JPYC / USDC / x402 AI agent payments.
+
 # Agent Budget Guard - AI運用コスト革命システム
 
 ## Japanese Agent Trust Layer
