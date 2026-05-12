@@ -30,6 +30,13 @@ Wallet: 0x60c402878EfcEcAe5733A88075328Aa2320C39BE
   "daily_limit": 5.00
 }
 
+## Payment support
+- USDC (Base mainnet)
+- JPYC (Polygon)
+- x402 protocol compatible
+- HashPort compatible
+- zERC-20 ready (planned)
+
 ## Output example
 {
   "approved": true,
