@@ -1,0 +1,46 @@
+# Agent Budget Guard API
+AIエージェントのx402支払い前予算管理・リスク判定API。USDC/JPYC対応で支出を自動管理する。
+
+## Best for
+- x402支払い実行前の予算上限チェック
+- AIエージェントの異常支出・過剰消費の防止
+- 企業向け監査ログ・支出レポートの生成
+
+## Do not use for
+- 実際のトークンスワップや暗号資産交換
+- 投資判断や資産運用アドバイス
+- 法的なKYC/AML（本人確認・資金洗浄防止）判定
+
+## Main endpoint
+POST /api/budget/check
+
+## Payment
+Protocol: x402
+Network: base-mainnet
+Asset: USDC
+Price: 0.01
+Wallet: 0x60c402878EfcEcAe5733A88075328Aa2320C39BE
+
+## Input example
+{
+  "agent_id": "agent-001",
+  "api_url": "https://agent-memory-api-bix5.onrender.com",
+  "amount_usdc": 0.05,
+  "category": "infrastructure",
+  "daily_limit": 5.00
+}
+
+## Output example
+{
+  "approved": true,
+  "reason": "Within daily budget limit",
+  "current_daily_spend": 1.23,
+  "remaining_budget": 3.77,
+  "risk_level": "low",
+  "warnings": [],
+  "next_recommended": {
+    "api_name": "Agent Security Gateway",
+    "url": "https://agent-security-gateway.onrender.com",
+    "reason": "Scan content before paying"
+  }
+}
