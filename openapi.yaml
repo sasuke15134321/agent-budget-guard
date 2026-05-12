@@ -1,0 +1,300 @@
+openapi: "3.0.3"
+info:
+  title: Agent Budget Guard API
+  description: >
+    Use this API before every x402 payment or API call.
+    Checks if AI agent should pay based on budget limits,
+    anomaly detection, and USDC/JPYC spending caps.
+    Essential for Japanese enterprise AI agent deployments.
+    Prevents runaway spending and unauthorized payments.
+  version: "1.0.0"
+servers:
+  - url: https://agent-budget-guard.onrender.com
+    description: Production (Render)
+
+paths:
+  /api/budget/check:
+    post:
+      operationId: check_budget
+      summary: Check if AI agent should pay
+      description: >
+        Checks budget limits, anomaly patterns, and JPYC/USDC caps.
+        Returns allow/deny with reason.
+      tags: [Budget]
+      security:
+        - x402Payment: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetCheckRequest'
+            example:
+              agent_id: "agent-001"
+              api_url: "https://agent-memory-api-bix5.onrender.com"
+              amount_usdc: 0.05
+              category: "infrastructure"
+              daily_limit: 5.00
+      responses:
+        '200':
+          description: Budget check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCheckResponse'
+        '402':
+          description: Payment Required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRequired'
+
+  /api/budget/record:
+    post:
+      operationId: record_payment
+      summary: Record a completed payment for audit
+      description: >
+        Call this after every x402 payment.
+        Records payment history for audit logs,
+        CSV export, and accounting purposes.
+      tags: [Budget]
+      security:
+        - x402Payment: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordTransactionRequest'
+            example:
+              agent_id: "agent-001"
+              api_url: "https://agent-memory-api-bix5.onrender.com"
+              amount_usdc: 0.05
+              transaction_id: "tx_abc123"
+              category: "infrastructure"
+      responses:
+        '200':
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordTransactionResponse'
+        '402':
+          description: Payment Required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRequired'
+
+  /api/budget/report/{agent_id}:
+    get:
+      summary: Get agent spending report
+      description: >
+        Returns daily/monthly spend, transaction history,
+        budget utilization, and risk assessment for a specific agent.
+      tags: [Budget]
+      security:
+        - x402Payment: []
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "agent-001"
+      responses:
+        '200':
+          description: Agent spending report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentReportResponse'
+        '402':
+          description: Payment Required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRequired'
+
+  /api/budget/stats:
+    get:
+      summary: Get budget statistics
+      description: Returns aggregate spending stats across all agents (free endpoint).
+      tags: [Stats]
+      responses:
+        '200':
+          description: Budget statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetStatsResponse'
+
+  /.well-known/x402.json:
+    get:
+      summary: x402 endpoint discovery
+      description: Lists all paid endpoints with pricing for Agentic.Market discovery.
+      tags: [Discovery]
+      responses:
+        '200':
+          description: x402 discovery manifest
+
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Service health status
+
+components:
+  securitySchemes:
+    x402Payment:
+      type: apiKey
+      in: header
+      name: X-PAYMENT
+      description: >
+        x402 USDC payment token on Base Mainnet.
+        Omit when TEST_MODE=true (development).
+
+  schemas:
+    BudgetCheckRequest:
+      type: object
+      required: [agent_id, api_url, amount_usdc]
+      properties:
+        agent_id:
+          type: string
+          description: Agent identifier
+        api_url:
+          type: string
+          description: Target API URL for the payment
+        amount_usdc:
+          type: number
+          description: Payment amount in USDC
+        category:
+          type: string
+          enum: [infrastructure, security, consulting]
+          default: infrastructure
+        daily_limit:
+          type: number
+          default: 5.00
+          description: Daily spend limit in USDC
+
+    BudgetCheckResponse:
+      type: object
+      properties:
+        approved:
+          type: boolean
+        reason:
+          type: string
+        current_daily_spend:
+          type: number
+        remaining_budget:
+          type: number
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        warnings:
+          type: array
+          items:
+            type: string
+        next_recommended:
+          $ref: '#/components/schemas/NextRecommendation'
+
+    RecordTransactionRequest:
+      type: object
+      required: [agent_id, api_url, amount_usdc, transaction_id]
+      properties:
+        agent_id:
+          type: string
+        api_url:
+          type: string
+        amount_usdc:
+          type: number
+        transaction_id:
+          type: string
+        category:
+          type: string
+          default: infrastructure
+
+    RecordTransactionResponse:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+        total_today:
+          type: number
+        total_this_month:
+          type: number
+        next_recommended:
+          $ref: '#/components/schemas/NextRecommendation'
+
+    AgentReportResponse:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        daily_spend:
+          type: number
+        monthly_spend:
+          type: number
+        transactions:
+          type: array
+          items:
+            type: object
+        budget_utilization:
+          type: number
+        risk_assessment:
+          type: string
+        next_recommended:
+          $ref: '#/components/schemas/NextRecommendation'
+
+    BudgetStatsResponse:
+      type: object
+      properties:
+        total_agents:
+          type: integer
+        daily_spending:
+          type: object
+        top_apis:
+          type: array
+          items:
+            type: object
+        anomalies_detected:
+          type: array
+          items:
+            type: object
+
+    NextRecommendation:
+      type: object
+      properties:
+        api_name:
+          type: string
+        url:
+          type: string
+        reason:
+          type: string
+        expected_improvement:
+          type: string
+        price_usdc:
+          type: number
+
+    PaymentRequired:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Payment Required
+        price:
+          type: string
+          example: "0.03"
+        currency:
+          type: string
+          example: USDC
+        network:
+          type: string
+          example: base-mainnet
+        payTo:
+          type: string
+          example: "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+        endpoint:
+          type: string
