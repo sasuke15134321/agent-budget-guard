@@ -1,13 +1,13 @@
-openapi: "3.0.3"
+openapi: "3.1.0"
 info:
   title: Agent Budget Guard API
+  version: "1.0.0"
   description: >
     Use this API before every x402 payment or API call.
     Checks if AI agent should pay based on budget limits,
     anomaly detection, and USDC/JPYC spending caps.
     Essential for Japanese enterprise AI agent deployments.
     Prevents runaway spending and unauthorized payments.
-  version: "1.0.0"
 servers:
   - url: https://agent-budget-guard.onrender.com
     description: Production (Render)
@@ -16,9 +16,11 @@ paths:
   /api/budget/check:
     post:
       operationId: check_budget
-      summary: Check if AI agent should pay
+      summary: Check if AI agent should pay for an API call
       description: >
-        Checks budget limits, anomaly patterns, and JPYC/USDC caps.
+        Use this before any x402 payment.
+        Verifies daily budget, per-call limits,
+        anomaly patterns, and JPYC/USDC caps.
         Returns allow/deny with reason.
       tags: [Budget]
       security:
@@ -57,6 +59,7 @@ paths:
         Call this after every x402 payment.
         Records payment history for audit logs,
         CSV export, and accounting purposes.
+
       tags: [Budget]
       security:
         - x402Payment: []
