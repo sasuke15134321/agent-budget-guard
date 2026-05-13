@@ -30,8 +30,8 @@ TEST_MODE = os.getenv("TEST_MODE", "true").lower() == "true"
 
 app = FastAPI(
     title="Agent Budget Guard API",
-    description="AI agent spending monitoring and anomaly detection service with x402 payment protocol",
-    version="1.0.0"
+    version="1.0.0",
+    description="L4 budget control and Japan invoice compliance API for AI agent x402 payments. Call before every USDC/JPYC payment. Returns allow/deny with audit log. JPYC and Japan invoice small-amount exception supported."
 )
 
 # CORS middleware
@@ -315,6 +315,7 @@ async def x402_discovery_manifest():
     response_model=BudgetCheckResponse,
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
+    tags=["Budget", "x402", "JPYC", "AI Agent", "Governance"],
 )
 async def check_budget(payload: BudgetCheckRequest, request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
@@ -367,6 +368,7 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
     response_model=RecordTransactionResponse,
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
+    tags=["Budget", "x402", "Audit", "AI Agent"],
 )
 async def record_budget(payload: BudgetCheckRequest, request: Request):
     """Record transaction with x402 payment verification"""
@@ -405,7 +407,7 @@ async def record_budget(payload: BudgetCheckRequest, request: Request):
         print(f"[ERROR] Transaction recording failed: {e}")
         raise HTTPException(status_code=500, detail=f"Transaction recording failed: {str(e)}")
 
-@app.get("/api/budget/report/{agent_id}", response_model=AgentReportResponse)
+@app.get("/api/budget/report/{agent_id}", response_model=AgentReportResponse, tags=["Budget", "Report", "Audit", "AI Agent"])
 async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), http_request: Request = None):
     """Get detailed spending report for specific agent with x402 payment verification"""
 
@@ -524,6 +526,7 @@ async def root():
     "/api/record-payment",
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
+    tags=["Payment", "x402", "JPYC", "Invoice", "Crypto"],
 )
 async def record_payment(payload: RecordPaymentRequest, request: Request):
     """Record payment tx and classify for Japan invoice small-amount exception"""
@@ -543,6 +546,7 @@ async def record_payment(payload: RecordPaymentRequest, request: Request):
     "/api/classify-invoice",
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
+    tags=["Invoice", "Japan Tax", "JPYC", "Accounting", "Compliance"],
 )
 async def classify_invoice(payload: ClassifyInvoiceRequest, request: Request):
     """Classify invoice requirement under Japan invoice small-amount exception rules"""
