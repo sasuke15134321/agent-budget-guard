@@ -31,7 +31,12 @@ TEST_MODE = os.getenv("TEST_MODE", "true").lower() == "true"
 app = FastAPI(
     title="Agent Budget Guard API",
     version="1.0.0",
-    description="L4 budget control and Japan invoice compliance API for AI agent x402 payments. Call before every USDC/JPYC payment. Returns allow/deny with audit log. JPYC and Japan invoice small-amount exception supported."
+    description=(
+        "Agent Budget Guard is an x402-paid governance API for autonomous AI agents. "
+        "It helps agents prevent unexpected paid API calls by checking per-request budgets, "
+        "daily limits, payment logs, invoice records, and JPY-denominated reporting. "
+        "Designed for AI agents using x402 payments, USDC on Base, and JPYC/JPY workflows."
+    )
 )
 
 # CORS middleware
@@ -53,13 +58,14 @@ def custom_openapi():
         routes=app.routes,
     )
     openapi_schema["info"]["x-guidance"] = (
-        "This API provides x402-paid governance tools for AI agents. "
-        "Use /api/budget/check before making paid tool calls, "
-        "/api/budget/record to persist spending decisions, "
-        "/api/record-payment to log completed payments, and "
-        "/api/classify-invoice to classify invoice/payment records. "
-        "All paid routes return HTTP 402 with x402 payment requirements "
-        "when called without X-PAYMENT."
+        "This API provides x402-paid governance tools for autonomous AI agents. "
+        "Agents should call /api/budget/check before making paid API calls to verify "
+        "per-request and daily spending limits. Use /api/budget/record to persist budget "
+        "decisions, /api/record-payment to log completed x402 payments, and "
+        "/api/classify-invoice to classify invoice or payment records. "
+        "The API is useful for AI agent spending control, payment governance, budget limits, "
+        "audit logging, USDC payments on Base, JPYC/JPY reporting workflows, and preventing "
+        "unexpected paid tool calls."
     )
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -312,10 +318,12 @@ async def x402_discovery_manifest():
 
 @app.post(
     "/api/budget/check",
+    summary="Check AI agent budget before paid API calls",
+    description="Checks whether an AI agent is allowed to make a paid x402 API call. Use before external tool calls or paid API requests to prevent unexpected spending and budget overruns.",
     response_model=BudgetCheckResponse,
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["Budget", "x402", "JPYC", "AI Agent", "Governance"],
+    tags=["x402", "AI Agents", "Budget Guard", "Payments", "Governance"],
 )
 async def check_budget(payload: BudgetCheckRequest, request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
@@ -365,10 +373,12 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
 
 @app.post(
     "/api/budget/record",
+    summary="Record AI agent budget decision",
+    description="Records a budget decision for an AI agent. Use after budget check to persist spending decisions for audit and reporting.",
     response_model=RecordTransactionResponse,
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["Budget", "x402", "Audit", "AI Agent"],
+    tags=["x402", "AI Agents", "Budget Guard", "Audit", "Governance"],
 )
 async def record_budget(payload: BudgetCheckRequest, request: Request):
     """Record transaction with x402 payment verification"""
@@ -407,7 +417,13 @@ async def record_budget(payload: BudgetCheckRequest, request: Request):
         print(f"[ERROR] Transaction recording failed: {e}")
         raise HTTPException(status_code=500, detail=f"Transaction recording failed: {str(e)}")
 
-@app.get("/api/budget/report/{agent_id}", response_model=AgentReportResponse, tags=["Budget", "Report", "Audit", "AI Agent"])
+@app.get(
+    "/api/budget/report/{agent_id}",
+    summary="Get AI agent spending report",
+    description="Returns spending report for a specific AI agent including daily totals, transaction history, and budget utilization.",
+    response_model=AgentReportResponse,
+    tags=["x402", "AI Agents", "Budget Guard", "Report", "Audit"],
+)
 async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), http_request: Request = None):
     """Get detailed spending report for specific agent with x402 payment verification"""
 
@@ -524,9 +540,11 @@ async def root():
 
 @app.post(
     "/api/record-payment",
+    summary="Log completed x402 payment",
+    description="Logs a completed x402 USDC or JPYC payment for audit and Japan invoice classification. Call after every successful x402 payment.",
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["Payment", "x402", "JPYC", "Invoice", "Crypto"],
+    tags=["x402", "Payments", "JPYC", "Invoice", "Crypto"],
 )
 async def record_payment(payload: RecordPaymentRequest, request: Request):
     """Record payment tx and classify for Japan invoice small-amount exception"""
@@ -544,9 +562,11 @@ async def record_payment(payload: RecordPaymentRequest, request: Request):
 
 @app.post(
     "/api/classify-invoice",
+    summary="Classify invoice for Japan tax compliance",
+    description="Classifies an invoice or payment record for Japan invoice system compliance. Determines small-amount exception applicability under Japan invoice special exception 2023-2029.",
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["Invoice", "Japan Tax", "JPYC", "Accounting", "Compliance"],
+    tags=["x402", "Invoice", "Japan Tax", "JPYC", "Compliance"],
 )
 async def classify_invoice(payload: ClassifyInvoiceRequest, request: Request):
     """Classify invoice requirement under Japan invoice small-amount exception rules"""
