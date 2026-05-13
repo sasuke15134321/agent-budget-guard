@@ -549,6 +549,60 @@ async def examples_md():
     return PlainTextResponse(content)
 
 
+@app.get("/.well-known/mcp/server-card.json")
+async def mcp_server_card():
+    return {
+        "serverInfo": {
+            "name": "agent-budget-guard",
+            "version": "1.0.0",
+            "description": "Pre-payment budget check and invoice routing for AI agent x402 payments. Prevents uncontrolled spending."
+        },
+        "tools": [
+            {
+                "name": "check_budget",
+                "description": "Check if AI agent should pay for an API call. Use before any x402 USDC or JPYC payment. Returns allow/deny with remaining budget.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "agent_id": {"type": "string"},
+                        "api_url": {"type": "string"},
+                        "amount_usdc": {"type": "number"}
+                    },
+                    "required": ["agent_id", "api_url", "amount_usdc"]
+                }
+            },
+            {
+                "name": "record_payment",
+                "description": "Record completed x402 payment for audit log and invoice classification.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "agent_id": {"type": "string"},
+                        "amount": {"type": "number"},
+                        "currency": {"type": "string"},
+                        "tx_hash": {"type": "string"}
+                    },
+                    "required": ["agent_id", "amount", "currency"]
+                }
+            },
+            {
+                "name": "classify_invoice",
+                "description": "Classify invoice requirement for JPYC x402 micro-payment under Japan invoice system.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "buyer_taxable_sales_jpy": {"type": "number"},
+                        "transaction_amount_tax_included_jpy": {"type": "number"},
+                        "transaction_date": {"type": "string"}
+                    },
+                    "required": ["buyer_taxable_sales_jpy", "transaction_amount_tax_included_jpy"]
+                }
+            }
+        ],
+        "resources": [],
+        "prompts": []
+    }
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
