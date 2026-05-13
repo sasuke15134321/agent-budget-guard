@@ -9,7 +9,7 @@ import os
 from fastapi import FastAPI, Request, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import json
 import base64
@@ -72,21 +72,6 @@ def custom_openapi():
                         "price": price_map[path],
                         "currency": "USDC"
                     }
-                    if "requestBody" not in operation:
-                        operation["requestBody"] = {
-                            "required": True,
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "properties": {
-                                            "agent_id": {"type": "string", "description": "Agent identifier"},
-                                            "amount_usdc": {"type": "number", "description": "Payment amount in USDC"}
-                                        }
-                                    }
-                                }
-                            }
-                        }
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -143,33 +128,33 @@ async def startup_event():
 
 # Request models
 class BudgetCheckRequest(BaseModel):
-    agent_id: str
-    api_url: str
-    amount_usdc: float
-    category: str = "infrastructure"  # consulting, infrastructure, security
-    daily_limit: Optional[float] = 5.00
+    agent_id: Optional[str] = Field(default="default-agent", description="AI agent identifier")
+    amount: Optional[float] = Field(default=0.03, description="Requested payment amount in USDC")
+    currency: Optional[str] = Field(default="USD", description="Currency: USD, USDC, JPYC, JPY")
+    api_url: Optional[str] = Field(default=None, description="Target API URL")
+    daily_limit: Optional[float] = Field(default=5.0, description="Daily spend limit in USDC")
 
 class RecordTransactionRequest(BaseModel):
-    agent_id: str
-    api_url: str
-    amount_usdc: float
-    transaction_id: str
-    category: Optional[str] = "infrastructure"
+    agent_id: Optional[str] = Field(default="default-agent", description="AI agent identifier")
+    api_url: Optional[str] = Field(default=None, description="Target API URL")
+    amount_usdc: Optional[float] = Field(default=0.01, description="Payment amount in USDC")
+    transaction_id: Optional[str] = Field(default=None, description="Transaction ID")
+    category: Optional[str] = Field(default="infrastructure", description="Transaction category")
 
 class RecordPaymentRequest(BaseModel):
-    agent_id: str
-    amount: float
-    currency: str
-    tax_included_amount_jpy: float
-    network: str
-    tx_hash: str
-    purpose: str
+    agent_id: Optional[str] = Field(default="default-agent", description="AI agent identifier")
+    amount: Optional[float] = Field(default=0.01, description="Payment amount")
+    currency: Optional[str] = Field(default="USDC", description="Currency used")
+    tax_included_amount_jpy: Optional[float] = Field(default=None, description="Tax-included amount in JPY")
+    network: Optional[str] = Field(default="polygon", description="Blockchain network")
+    tx_hash: Optional[str] = Field(default=None, description="Transaction hash")
+    purpose: Optional[str] = Field(default="api_call", description="Payment purpose")
 
 class ClassifyInvoiceRequest(BaseModel):
-    buyer_taxable_sales_jpy: float
-    transaction_amount_tax_included_jpy: float
-    transaction_date: str
-    seller_invoice_registered: bool
+    buyer_taxable_sales_jpy: Optional[float] = Field(default=50000000, description="Buyer annual taxable sales in JPY")
+    transaction_amount_tax_included_jpy: Optional[float] = Field(default=1500, description="Transaction amount including tax in JPY")
+    transaction_date: Optional[str] = Field(default=None, description="Transaction date YYYY-MM-DD")
+    seller_invoice_registered: Optional[bool] = Field(default=True, description="Whether seller is invoice registered")
 
 # Response models
 class NextRecommendation(BaseModel):
@@ -298,13 +283,23 @@ async def x402_discovery_manifest():
         "instructions": "x402 L4 governance API for AI agent payments. Budget control, JPYC support, Japan invoice compliance."
     }
 
-@app.post("/api/budget/check", response_model=BudgetCheckResponse)
-async def check_budget(request: BudgetCheckRequest, http_request: Request):
+@app.post(
+    "/api/budget/check",
+    response_model=BudgetCheckResponse,
+    responses={402: {"description": "Payment Required"}},
+    openapi_extra={
+        "x-payment-info": {
+            "price": {"mode": "fixed", "currency": "USD", "amount": "0.03"},
+            "protocols": [{"x402": {}}]
+        }
+    }
+)
+async def check_budget(payload: BudgetCheckRequest, request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
 
     # Skip payment verification in test mode
     if not TEST_MODE:
-        payment_header = http_request.headers.get("X-PAYMENT")
+        payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
             _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
@@ -315,18 +310,18 @@ async def check_budget(request: BudgetCheckRequest, http_request: Request):
 
     try:
         result = await budget_engine.check_budget(
-            agent_id=request.agent_id,
-            api_url=request.api_url,
-            amount_usdc=request.amount_usdc,
-            category=request.category,
-            daily_limit=request.daily_limit
+            agent_id=payload.agent_id,
+            api_url=payload.api_url,
+            amount_usdc=payload.amount,
+            category="infrastructure",
+            daily_limit=payload.daily_limit
         )
 
         # Log budget check
         await budget_db.log_budget_check(
-            agent_id=request.agent_id,
-            api_url=request.api_url,
-            amount_usdc=request.amount_usdc,
+            agent_id=payload.agent_id,
+            api_url=payload.api_url,
+            amount_usdc=payload.amount,
             approved=result["approved"],
             reason=result["reason"]
         )
@@ -345,13 +340,23 @@ async def check_budget(request: BudgetCheckRequest, http_request: Request):
         print(f"[ERROR] Budget check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Budget check failed: {str(e)}")
 
-@app.post("/api/budget/record", response_model=RecordTransactionResponse)
-async def record_transaction(request: RecordTransactionRequest, http_request: Request):
+@app.post(
+    "/api/budget/record",
+    response_model=RecordTransactionResponse,
+    responses={402: {"description": "Payment Required"}},
+    openapi_extra={
+        "x-payment-info": {
+            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"},
+            "protocols": [{"x402": {}}]
+        }
+    }
+)
+async def record_budget(payload: BudgetCheckRequest, request: Request):
     """Record transaction with x402 payment verification"""
 
     # Skip payment verification in test mode
     if not TEST_MODE:
-        payment_header = http_request.headers.get("X-PAYMENT")
+        payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
             _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "10000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
@@ -362,11 +367,11 @@ async def record_transaction(request: RecordTransactionRequest, http_request: Re
 
     try:
         result = await budget_engine.record_transaction(
-            agent_id=request.agent_id,
-            api_url=request.api_url,
-            amount_usdc=request.amount_usdc,
-            transaction_id=request.transaction_id,
-            category=request.category
+            agent_id=payload.agent_id,
+            api_url=payload.api_url,
+            amount_usdc=payload.amount,
+            transaction_id=None,
+            category="infrastructure"
         )
 
         # Add cross-sell recommendation
@@ -498,11 +503,20 @@ async def root():
         ]
     }
 
-@app.post("/api/record-payment")
-async def record_payment(request: RecordPaymentRequest, http_request: Request):
+@app.post(
+    "/api/record-payment",
+    responses={402: {"description": "Payment Required"}},
+    openapi_extra={
+        "x-payment-info": {
+            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"},
+            "protocols": [{"x402": {}}]
+        }
+    }
+)
+async def record_payment(payload: RecordPaymentRequest, request: Request):
     """Record payment tx and classify for Japan invoice small-amount exception"""
     ts = int(datetime.now().timestamp())
-    invoice_required = request.tax_included_amount_jpy >= 10000
+    invoice_required = (payload.tax_included_amount_jpy or 0) >= 10000
     reason = "invoice required" if invoice_required else "small-amount exception candidate"
     return {
         "recorded": True,
@@ -513,12 +527,21 @@ async def record_payment(request: RecordPaymentRequest, http_request: Request):
         "monthly_summary_required": True
     }
 
-@app.post("/api/classify-invoice")
-async def classify_invoice(request: ClassifyInvoiceRequest, http_request: Request):
+@app.post(
+    "/api/classify-invoice",
+    responses={402: {"description": "Payment Required"}},
+    openapi_extra={
+        "x-payment-info": {
+            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"},
+            "protocols": [{"x402": {}}]
+        }
+    }
+)
+async def classify_invoice(payload: ClassifyInvoiceRequest, request: Request):
     """Classify invoice requirement under Japan invoice small-amount exception rules"""
     small_amount_exception = (
-        request.buyer_taxable_sales_jpy <= 100_000_000 and
-        request.transaction_amount_tax_included_jpy < 10_000
+        (payload.buyer_taxable_sales_jpy or 50000000) <= 100_000_000 and
+        (payload.transaction_amount_tax_included_jpy or 1500) < 10_000
     )
     if small_amount_exception:
         return {
