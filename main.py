@@ -67,10 +67,13 @@ def custom_openapi():
             for method, operation in methods.items():
                 if isinstance(operation, dict):
                     operation["x-payment-info"] = {
-                        "protocols": "x402",
+                        "protocols": [{"x402": {}}],
                         "authMode": "x402",
-                        "price": price_map[path],
-                        "currency": "USDC"
+                        "price": {
+                            "mode": "fixed",
+                            "amount": price_map[path],
+                            "currency": "USDC"
+                        }
                     }
 
     app.openapi_schema = openapi_schema
