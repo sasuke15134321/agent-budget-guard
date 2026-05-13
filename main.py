@@ -235,10 +235,16 @@ async def x402_discovery_manifest():
     return {
         "version": 1,
         "resources": [
-            "POST /api/budget/check",
-            "POST /api/budget/record",
-            "GET /api/budget/report/{agent_id}"
-        ]
+            "https://agent-budget-guard.onrender.com/api/budget/check",
+            "https://agent-budget-guard.onrender.com/api/budget/record",
+            "https://agent-budget-guard.onrender.com/api/budget/report/{agent_id}",
+            "https://agent-budget-guard.onrender.com/api/record-payment",
+            "https://agent-budget-guard.onrender.com/api/classify-invoice"
+        ],
+        "ownershipProofs": [
+            "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+        ],
+        "instructions": "x402 L4 governance API for AI agent payments. Budget control, JPYC support, Japan invoice compliance."
     }
 
 @app.post("/api/budget/check", response_model=BudgetCheckResponse)
