@@ -233,6 +233,17 @@ async def x402_discovery():
         ]
     }
 
+@app.get("/.well-known/x402")
+async def x402_discovery_manifest():
+    return {
+        "version": 1,
+        "resources": [
+            "POST /api/budget/check",
+            "POST /api/budget/record",
+            "GET /api/budget/report/{agent_id}"
+        ]
+    }
+
 @app.post("/api/budget/check", response_model=BudgetCheckResponse)
 async def check_budget(request: BudgetCheckRequest, http_request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
