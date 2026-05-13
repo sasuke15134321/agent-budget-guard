@@ -52,31 +52,31 @@ def custom_openapi():
         description=app.description,
         routes=app.routes,
     )
-    openapi_schema["info"]["x-guidance"] = "Use this API before every x402 USDC or JPYC payment. L4 budget control, Japan invoice compliance."
-
-    price_map = {
-        "/api/budget/check": "0.03",
-        "/api/budget/record": "0.01",
-        "/api/budget/report/{agent_id}": "0.05",
-        "/api/record-payment": "0.01",
-        "/api/classify-invoice": "0.01"
-    }
-
-    for path, methods in openapi_schema.get("paths", {}).items():
-        if path in price_map:
-            for method, operation in methods.items():
-                if isinstance(operation, dict):
-                    operation["x-payment-info"] = {
-                        "protocols": ["x402"],
-                        "authMode": "x402",
-                        "price": price_map[path],
-                        "currency": "USDC"
-                    }
-
+    openapi_schema["info"]["x-guidance"] = (
+        "This API provides x402-paid governance tools for AI agents. "
+        "Use /api/budget/check before making paid tool calls, "
+        "/api/budget/record to persist spending decisions, "
+        "/api/record-payment to log completed payments, and "
+        "/api/classify-invoice to classify invoice/payment records. "
+        "All paid routes return HTTP 402 with x402 payment requirements "
+        "when called without X-PAYMENT."
+    )
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
+def paid_operation(amount_usd: str) -> dict:
+    return {
+        "x-payment-info": {
+            "price": {
+                "mode": "fixed",
+                "currency": "USD",
+                "amount": amount_usd,
+            },
+            "protocols": [{"x402": {}}],
+        }
+    }
 
 # Paid endpoint config: path -> (price, method)
 _PAID_ENDPOINTS = {
@@ -287,12 +287,7 @@ async def x402_discovery_manifest():
     "/api/budget/check",
     response_model=BudgetCheckResponse,
     responses={402: {"description": "Payment Required"}},
-    openapi_extra={
-        "x-payment-info": {
-            "price": {"mode": "fixed", "currency": "USD", "amount": "0.03"},
-            "protocols": [{"x402": {}}]
-        }
-    }
+    openapi_extra=paid_operation("0.03"),
 )
 async def check_budget(payload: BudgetCheckRequest, request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
@@ -344,12 +339,7 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
     "/api/budget/record",
     response_model=RecordTransactionResponse,
     responses={402: {"description": "Payment Required"}},
-    openapi_extra={
-        "x-payment-info": {
-            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"},
-            "protocols": [{"x402": {}}]
-        }
-    }
+    openapi_extra=paid_operation("0.03"),
 )
 async def record_budget(payload: BudgetCheckRequest, request: Request):
     """Record transaction with x402 payment verification"""
@@ -506,12 +496,7 @@ async def root():
 @app.post(
     "/api/record-payment",
     responses={402: {"description": "Payment Required"}},
-    openapi_extra={
-        "x-payment-info": {
-            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"},
-            "protocols": [{"x402": {}}]
-        }
-    }
+    openapi_extra=paid_operation("0.03"),
 )
 async def record_payment(payload: RecordPaymentRequest, request: Request):
     """Record payment tx and classify for Japan invoice small-amount exception"""
@@ -530,12 +515,7 @@ async def record_payment(payload: RecordPaymentRequest, request: Request):
 @app.post(
     "/api/classify-invoice",
     responses={402: {"description": "Payment Required"}},
-    openapi_extra={
-        "x-payment-info": {
-            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"},
-            "protocols": [{"x402": {}}]
-        }
-    }
+    openapi_extra=paid_operation("0.03"),
 )
 async def classify_invoice(payload: ClassifyInvoiceRequest, request: Request):
     """Classify invoice requirement under Japan invoice small-amount exception rules"""
@@ -646,20 +626,7 @@ async def mcp_server_card():
 @app.get(
     "/api/x402-demo",
     responses={402: {"description": "Payment Required"}},
-    openapi_extra={
-        "x-payment-info": {
-            "protocols": [{"name": "x402", "version": "1"}],
-            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"}
-        },
-        "requestBody": {
-            "required": False,
-            "content": {
-                "application/json": {
-                    "schema": {"type": "object"}
-                }
-            }
-        }
-    }
+    openapi_extra=paid_operation("0.01"),
 )
 async def x402_demo(request: Request):
     payment_header = request.headers.get("X-PAYMENT")
