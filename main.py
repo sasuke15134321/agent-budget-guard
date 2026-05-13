@@ -66,19 +66,11 @@ async def x402_payment_middleware(request: Request, call_next):
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
             max_amount = str(round(float(price) * 1_000_000))
+            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": max_amount, "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
             return JSONResponse(
                 status_code=402,
-                content={
-                    "x402Version": 1,
-                    "accepts": [{
-                        "scheme": "exact",
-                        "network": "eip155:8453",
-                        "maxAmountRequired": max_amount,
-                        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
-                    }],
-                    "error": "Payment required"
-                }
+                content=_pc,
+                headers={"PAYMENT-REQUIRED": json.dumps(_pc)}
             )
 
     return await call_next(request)
@@ -256,20 +248,8 @@ async def check_budget(request: BudgetCheckRequest, http_request: Request):
     if not TEST_MODE:
         payment_header = http_request.headers.get("X-PAYMENT")
         if not payment_header:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "x402Version": 1,
-                    "accepts": [{
-                        "scheme": "exact",
-                        "network": "eip155:8453",
-                        "maxAmountRequired": "30000",
-                        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
-                    }],
-                    "error": "Payment required"
-                }
-            )
+            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
+            return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": json.dumps(_pc)})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, PRICE_USDC)
         if not is_valid:
@@ -315,20 +295,8 @@ async def record_transaction(request: RecordTransactionRequest, http_request: Re
     if not TEST_MODE:
         payment_header = http_request.headers.get("X-PAYMENT")
         if not payment_header:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "x402Version": 1,
-                    "accepts": [{
-                        "scheme": "exact",
-                        "network": "eip155:8453",
-                        "maxAmountRequired": "10000",
-                        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
-                    }],
-                    "error": "Payment required"
-                }
-            )
+            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "10000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
+            return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": json.dumps(_pc)})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, "0.01")
         if not is_valid:
@@ -365,20 +333,8 @@ async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), ht
     if not TEST_MODE:
         payment_header = http_request.headers.get("X-PAYMENT")
         if not payment_header:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "x402Version": 1,
-                    "accepts": [{
-                        "scheme": "exact",
-                        "network": "eip155:8453",
-                        "maxAmountRequired": "50000",
-                        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
-                    }],
-                    "error": "Payment required"
-                }
-            )
+            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "50000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
+            return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": json.dumps(_pc)})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, "0.05")
         if not is_valid:
