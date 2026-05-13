@@ -65,15 +65,19 @@ async def x402_payment_middleware(request: Request, call_next):
     if not TEST_MODE and price is not None:
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
+            max_amount = str(round(float(price) * 1_000_000))
             return JSONResponse(
                 status_code=402,
                 content={
-                    "error": "Payment Required",
-                    "price": price,
-                    "currency": "USDC",
-                    "network": "base-mainnet",
-                    "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE",
-                    "endpoint": path
+                    "x402Version": 1,
+                    "accepts": [{
+                        "scheme": "exact",
+                        "network": "eip155:8453",
+                        "maxAmountRequired": max_amount,
+                        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+                    }],
+                    "error": "Payment required"
                 }
             )
 
@@ -258,16 +262,12 @@ async def check_budget(request: BudgetCheckRequest, http_request: Request):
                     "x402Version": 1,
                     "accepts": [{
                         "scheme": "exact",
-                        "network": "base",
-                        "maxAmountRequired": "30000",  # 0.03 USDC
-                        "resource": f"{http_request.url}",
-                        "description": "Budget Check - エージェント支出承認チェック",
-                        "mimeType": "application/json",
-                        "payTo": WALLET_ADDRESS,
-                        "maxTimeoutSeconds": 300,
+                        "network": "eip155:8453",
+                        "maxAmountRequired": "30000",
                         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "extra": {"name": "USDC", "version": "2"}
-                    }]
+                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+                    }],
+                    "error": "Payment required"
                 }
             )
 
@@ -321,16 +321,12 @@ async def record_transaction(request: RecordTransactionRequest, http_request: Re
                     "x402Version": 1,
                     "accepts": [{
                         "scheme": "exact",
-                        "network": "base",
-                        "maxAmountRequired": "10000",  # 0.01 USDC
-                        "resource": f"{http_request.url}",
-                        "description": "Transaction Recording - 支出記録",
-                        "mimeType": "application/json",
-                        "payTo": WALLET_ADDRESS,
-                        "maxTimeoutSeconds": 300,
+                        "network": "eip155:8453",
+                        "maxAmountRequired": "10000",
                         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "extra": {"name": "USDC", "version": "2"}
-                    }]
+                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+                    }],
+                    "error": "Payment required"
                 }
             )
 
@@ -375,16 +371,12 @@ async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), ht
                     "x402Version": 1,
                     "accepts": [{
                         "scheme": "exact",
-                        "network": "base",
-                        "maxAmountRequired": "50000",  # 0.05 USDC
-                        "resource": f"{http_request.url}",
-                        "description": "Agent Report - エージェント詳細レポート",
-                        "mimeType": "application/json",
-                        "payTo": WALLET_ADDRESS,
-                        "maxTimeoutSeconds": 300,
+                        "network": "eip155:8453",
+                        "maxAmountRequired": "50000",
                         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                        "extra": {"name": "USDC", "version": "2"}
-                    }]
+                        "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+                    }],
+                    "error": "Payment required"
                 }
             )
 
