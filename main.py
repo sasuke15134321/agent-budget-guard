@@ -111,15 +111,25 @@ async def x402_payment_middleware(request: Request, call_next):
     if not TEST_MODE and price is not None:
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
-            max_amount = str(round(float(price) * 1_000_000))
+            amount = str(round(float(price) * 1_000_000))
             _pc = {
                 "x402Version": 2,
                 "error": "Payment required",
                 "resource": {
                     "url": str(request.url),
+                    "method": method,
                     "description": _ENDPOINT_DESCRIPTIONS.get(path, "Paid API endpoint"),
+                    "mimeType": "application/json",
                 },
-                "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": max_amount, "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}],
+                "accepts": [{
+                    "scheme": "exact",
+                    "network": "eip155:8453",
+                    "amount": amount,
+                    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                    "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE",
+                    "maxTimeoutSeconds": 300,
+                    "extra": {"name": "USD Coin", "version": "2"},
+                }],
             }
             return JSONResponse(
                 status_code=402,
