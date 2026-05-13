@@ -78,12 +78,21 @@ def paid_operation(amount_usd: str) -> dict:
         }
     }
 
-# Paid endpoint config: path -> (price, method)
+# Paid endpoint config: (method, path) -> price in USD
 _PAID_ENDPOINTS = {
     ("POST", "/api/budget/check"):    "0.03",
-    ("POST", "/api/budget/record"):   "0.01",
-    ("POST", "/api/record-payment"):  "0.01",
-    ("POST", "/api/classify-invoice"): "0.01",
+    ("POST", "/api/budget/record"):   "0.03",
+    ("POST", "/api/record-payment"):  "0.03",
+    ("POST", "/api/classify-invoice"): "0.03",
+    ("GET",  "/api/x402-demo"):       "0.01",
+}
+
+_ENDPOINT_DESCRIPTIONS = {
+    "/api/budget/check":    "Check budget and approve/deny AI agent spending with x402 payment verification",
+    "/api/budget/record":   "Record a budget transaction for an AI agent",
+    "/api/record-payment":  "Log a completed x402 payment",
+    "/api/classify-invoice": "Classify an invoice or payment record for tax/accounting purposes",
+    "/api/x402-demo":       "Demo endpoint to test x402 payment flow",
 }
 
 @app.middleware("http")
@@ -103,11 +112,19 @@ async def x402_payment_middleware(request: Request, call_next):
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
             max_amount = str(round(float(price) * 1_000_000))
-            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": max_amount, "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}], "error": "Payment required"}
+            _pc = {
+                "x402Version": 2,
+                "error": "Payment required",
+                "resource": {
+                    "url": str(request.url),
+                    "description": _ENDPOINT_DESCRIPTIONS.get(path, "Paid API endpoint"),
+                },
+                "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": max_amount, "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"}],
+            }
             return JSONResponse(
                 status_code=402,
                 content=_pc,
-                headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()}
+                headers={"Payment-Required": base64.b64encode(json.dumps(_pc).encode()).decode()}
             )
 
     return await call_next(request)
