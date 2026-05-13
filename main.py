@@ -72,6 +72,21 @@ def custom_openapi():
                         "price": price_map[path],
                         "currency": "USDC"
                     }
+                    if "requestBody" not in operation:
+                        operation["requestBody"] = {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "agent_id": {"type": "string", "description": "Agent identifier"},
+                                            "amount_usdc": {"type": "number", "description": "Payment amount in USDC"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -612,6 +627,14 @@ async def mcp_server_card():
         "x-payment-info": {
             "protocols": [{"name": "x402", "version": "1"}],
             "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"}
+        },
+        "requestBody": {
+            "required": False,
+            "content": {
+                "application/json": {
+                    "schema": {"type": "object"}
+                }
+            }
         }
     }
 )
