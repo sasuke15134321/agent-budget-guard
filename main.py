@@ -301,6 +301,15 @@ async def x402_discovery():
 async def x402_discovery_manifest():
     return {
         "version": 1,
+        "name": "Agent Budget Guard",
+        "title": "Agent Budget Guard",
+        "description": (
+            "Pay-per-request governance APIs for autonomous AI agents using x402. "
+            "Check budgets, record spending decisions, log completed payments, "
+            "classify invoices, and generate audit-ready budget reports. "
+            "Built for AI agent spending control, USDC/Base payments, and JPY/JPYC reporting."
+        ),
+        "tags": ["AI", "Payments", "Governance"],
         "resources": [
             "https://agent-budget-guard.onrender.com/api/budget/check",
             "https://agent-budget-guard.onrender.com/api/budget/record",
@@ -312,9 +321,10 @@ async def x402_discovery_manifest():
             "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
         ],
         "instructions": (
-            "Agent Budget Guard is an x402-paid governance API for autonomous AI agents. "
-            "Check budgets before paid calls, record decisions, log payments, "
-            "classify invoices, and generate spending reports."
+            "Agent Budget Guard helps AI agents control x402 spending. "
+            "Use /api/budget/check before paid API calls, /api/budget/record "
+            "to persist budget decisions, /api/record-payment to log payments, "
+            "/api/classify-invoice for accounting classification."
         )
     }
 
