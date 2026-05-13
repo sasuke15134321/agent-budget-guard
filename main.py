@@ -90,7 +90,6 @@ _PAID_ENDPOINTS = {
     ("POST", "/api/budget/record"):   "0.03",
     ("POST", "/api/record-payment"):  "0.03",
     ("POST", "/api/classify-invoice"): "0.03",
-    ("GET",  "/api/x402-demo"):       "0.01",
 }
 
 _ENDPOINT_DESCRIPTIONS = {
@@ -98,7 +97,6 @@ _ENDPOINT_DESCRIPTIONS = {
     "/api/budget/record":   "Record a budget transaction for an AI agent",
     "/api/record-payment":  "Log a completed x402 payment",
     "/api/classify-invoice": "Classify an invoice or payment record for tax/accounting purposes",
-    "/api/x402-demo":       "Demo endpoint to test x402 payment flow",
 }
 
 @app.middleware("http")
@@ -306,14 +304,13 @@ async def x402_discovery_manifest():
         "resources": [
             "https://agent-budget-guard.onrender.com/api/budget/check",
             "https://agent-budget-guard.onrender.com/api/budget/record",
-            "https://agent-budget-guard.onrender.com/api/budget/report/{agent_id}",
             "https://agent-budget-guard.onrender.com/api/record-payment",
             "https://agent-budget-guard.onrender.com/api/classify-invoice"
         ],
         "ownershipProofs": [
             "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
         ],
-        "instructions": "x402 L4 governance API for AI agent payments. Budget control, JPYC support, Japan invoice compliance."
+        "instructions": "x402-paid budget governance API for AI agent payments. Call /api/budget/check before every paid API call."
     }
 
 @app.post(
@@ -673,33 +670,6 @@ async def mcp_server_card():
         "resources": [],
         "prompts": []
     }
-
-@app.get(
-    "/api/x402-demo",
-    responses={402: {"description": "Payment Required"}},
-    openapi_extra=paid_operation("0.01"),
-)
-async def x402_demo(request: Request):
-    payment_header = request.headers.get("X-PAYMENT")
-    if not payment_header:
-        pc = {
-            "x402Version": 1,
-            "accepts": [{
-                "scheme": "exact",
-                "network": "eip155:8453",
-                "maxAmountRequired": "10000",
-                "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
-            }],
-            "error": "Payment required"
-        }
-        return JSONResponse(
-            status_code=402,
-            content=pc,
-            headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(pc).encode()).decode()}
-        )
-    return {"ok": True, "message": "paid"}
-
 
 if __name__ == "__main__":
     import uvicorn
