@@ -16,6 +16,7 @@ import base64
 from datetime import datetime
 import asyncio
 import traceback
+from fastapi.openapi.utils import get_openapi
 
 from payment_verifier import PaymentVerifier
 from budget_engine import BudgetEngine
@@ -41,6 +42,44 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    openapi_schema["info"]["x-guidance"] = "Use this API before every x402 USDC or JPYC payment. L4 budget control, Japan invoice compliance."
+
+    price_map = {
+        "/api/budget/check": "0.03",
+        "/api/budget/record": "0.01",
+        "/api/budget/report/{agent_id}": "0.05",
+        "/api/record-payment": "0.01",
+        "/api/classify-invoice": "0.01"
+    }
+
+    for path, methods in openapi_schema.get("paths", {}).items():
+        if path in price_map:
+            for method, operation in methods.items():
+                if isinstance(operation, dict):
+                    operation["x-payment-info"] = {
+                        "protocols": ["x402"],
+                        "authMode": "x402",
+                        "price": {
+                            "mode": "fixed",
+                            "currency": "USDC",
+                            "amount": price_map[path]
+                        }
+                    }
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Paid endpoint config: path -> (price, method)
 _PAID_ENDPOINTS = {
