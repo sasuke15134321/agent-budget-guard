@@ -43,8 +43,10 @@ app.add_middleware(
 
 # Paid endpoint config: path -> (price, method)
 _PAID_ENDPOINTS = {
-    ("POST", "/api/budget/check"):  "0.03",
-    ("POST", "/api/budget/record"): "0.01",
+    ("POST", "/api/budget/check"):    "0.03",
+    ("POST", "/api/budget/record"):   "0.01",
+    ("POST", "/api/record-payment"):  "0.01",
+    ("POST", "/api/classify-invoice"): "0.01",
 }
 
 @app.middleware("http")
@@ -105,6 +107,21 @@ class RecordTransactionRequest(BaseModel):
     amount_usdc: float
     transaction_id: str
     category: Optional[str] = "infrastructure"
+
+class RecordPaymentRequest(BaseModel):
+    agent_id: str
+    amount: float
+    currency: str
+    tax_included_amount_jpy: float
+    network: str
+    tx_hash: str
+    purpose: str
+
+class ClassifyInvoiceRequest(BaseModel):
+    buyer_taxable_sales_jpy: float
+    transaction_amount_tax_included_jpy: float
+    transaction_date: str
+    seller_invoice_registered: bool
 
 # Response models
 class NextRecommendation(BaseModel):
@@ -463,6 +480,63 @@ async def root():
             "x402 Payment Integration"
         ]
     }
+
+@app.post("/api/record-payment")
+async def record_payment(request: RecordPaymentRequest, http_request: Request):
+    """Record payment tx and classify for Japan invoice small-amount exception"""
+    ts = int(datetime.now().timestamp())
+    invoice_required = request.tax_included_amount_jpy >= 10000
+    reason = "invoice required" if invoice_required else "small-amount exception candidate"
+    return {
+        "recorded": True,
+        "audit_id": f"audit_{ts}",
+        "invoice_required": invoice_required,
+        "reason": reason,
+        "bookkeeping_required": True,
+        "monthly_summary_required": True
+    }
+
+@app.post("/api/classify-invoice")
+async def classify_invoice(request: ClassifyInvoiceRequest, http_request: Request):
+    """Classify invoice requirement under Japan invoice small-amount exception rules"""
+    small_amount_exception = (
+        request.buyer_taxable_sales_jpy <= 100_000_000 and
+        request.transaction_amount_tax_included_jpy < 10_000
+    )
+    if small_amount_exception:
+        return {
+            "invoice_required": False,
+            "bookkeeping_only": True,
+            "reason": "small-amount exception applies (under 10,000 JPY, buyer taxable sales under 100M JPY)"
+        }
+    return {
+        "invoice_required": True,
+        "bookkeeping_only": False,
+        "reason": "standard invoice required"
+    }
+
+@app.get("/api/monthly-summary")
+async def monthly_summary(buyer_id: Optional[str] = None, month: Optional[str] = None):
+    """Monthly payment summary for accounting (free endpoint, no x402 required)"""
+    return {
+        "buyer_id": buyer_id,
+        "month": month,
+        "total_transactions": 0,
+        "total_amount_jpy": 0,
+        "small_amount_exception_count": 0,
+        "invoice_required_count": 0,
+        "note": "Summary feature coming soon. Tx recording via /api/record-payment."
+    }
+
+@app.get("/openapi.yaml")
+async def openapi_yaml():
+    content = open("openapi.yaml").read()
+    return PlainTextResponse(content, media_type="text/yaml")
+
+@app.get("/skill.md")
+async def skill_md():
+    content = open("skill.md").read()
+    return PlainTextResponse(content)
 
 @app.get("/llms.txt")
 async def llms_txt():

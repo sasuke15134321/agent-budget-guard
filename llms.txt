@@ -5,6 +5,9 @@ AIエージェントのx402支払い前予算管理・リスク判定API。USDC/
 - x402支払い実行前の予算上限チェック
 - AIエージェントの異常支出・過剰消費の防止
 - 企業向け監査ログ・支出レポートの生成
+- Post-payment tx recording and invoice classification
+- Japan invoice small-amount exception judgment (under 10,000 JPY)
+- Monthly payment summary for accounting export
 
 ## Do not use for
 - 実際のトークンスワップや暗号資産交換
