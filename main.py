@@ -605,6 +605,38 @@ async def mcp_server_card():
         "prompts": []
     }
 
+@app.get(
+    "/api/x402-demo",
+    responses={402: {"description": "Payment Required"}},
+    openapi_extra={
+        "x-payment-info": {
+            "protocols": [{"name": "x402", "version": "1"}],
+            "price": {"mode": "fixed", "currency": "USD", "amount": "0.01"}
+        }
+    }
+)
+async def x402_demo(request: Request):
+    payment_header = request.headers.get("X-PAYMENT")
+    if not payment_header:
+        pc = {
+            "x402Version": 1,
+            "accepts": [{
+                "scheme": "exact",
+                "network": "eip155:8453",
+                "maxAmountRequired": "10000",
+                "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+            }],
+            "error": "Payment required"
+        }
+        return JSONResponse(
+            status_code=402,
+            content=pc,
+            headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(pc).encode()).decode()}
+        )
+    return {"ok": True, "message": "paid"}
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
