@@ -29,13 +29,13 @@ NETWORK = os.getenv("NETWORK", "base-mainnet")
 TEST_MODE = os.getenv("TEST_MODE", "true").lower() == "true"
 
 app = FastAPI(
-    title="Agent Budget Guard API",
+    title="Agent Budget Guard",
     version="1.0.0",
     description=(
-        "Agent Budget Guard is an x402-paid governance API for autonomous AI agents. "
-        "It helps agents prevent unexpected paid API calls by checking per-request budgets, "
-        "daily limits, payment logs, invoice records, and JPY-denominated reporting. "
-        "Designed for AI agents using x402 payments, USDC on Base, and JPYC/JPY workflows."
+        "Pay-per-request governance APIs for AI agents using x402. "
+        "Check budgets, log payments, classify invoices, and generate audit-ready "
+        "spending records. Built for autonomous agents, USDC/Base payments, "
+        "and JPY/JPYC reporting workflows."
     )
 )
 
@@ -226,7 +226,7 @@ class AgentReportResponse(BaseModel):
     next_recommended: NextRecommendation
 
 # AI agent policy endpoint
-@app.get("/.well-known/ai-agent-policy")
+@app.get("/.well-known/ai-agent-policy", include_in_schema=False)
 async def ai_agent_policy():
     import json
     import os
@@ -237,7 +237,7 @@ async def ai_agent_policy():
     return {"error": "Policy not found"}
 
 # x402 payment protocol endpoint discovery
-@app.get("/.well-known/x402.json")
+@app.get("/.well-known/x402.json", include_in_schema=False)
 async def x402_discovery():
     """x402 protocol endpoint discovery for Agentic.Market"""
     return {
@@ -297,30 +297,35 @@ async def x402_discovery():
         ]
     }
 
-@app.get("/.well-known/x402")
+@app.get("/.well-known/x402", include_in_schema=False)
 async def x402_discovery_manifest():
     return {
         "version": 1,
         "resources": [
             "https://agent-budget-guard.onrender.com/api/budget/check",
             "https://agent-budget-guard.onrender.com/api/budget/record",
+            "https://agent-budget-guard.onrender.com/api/budget/report/{agent_id}",
             "https://agent-budget-guard.onrender.com/api/record-payment",
             "https://agent-budget-guard.onrender.com/api/classify-invoice"
         ],
         "ownershipProofs": [
             "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
         ],
-        "instructions": "x402-paid budget governance API for AI agent payments. Call /api/budget/check before every paid API call."
+        "instructions": (
+            "Agent Budget Guard is an x402-paid governance API for autonomous AI agents. "
+            "Check budgets before paid calls, record decisions, log payments, "
+            "classify invoices, and generate spending reports."
+        )
     }
 
 @app.post(
     "/api/budget/check",
-    summary="Check AI agent budget before paid API calls",
-    description="Checks whether an AI agent is allowed to make a paid x402 API call. Use before external tool calls or paid API requests to prevent unexpected spending and budget overruns.",
+    summary="Budget Check - Verify spending before paid API calls",
+    description="Checks whether an autonomous AI agent is allowed to make a paid x402 API call. Use before external tool calls to prevent unexpected spending and budget overruns.",
     response_model=BudgetCheckResponse,
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["x402", "AI Agents", "Budget Guard", "Payments", "Governance"],
+    tags=["Governance"],
 )
 async def check_budget(payload: BudgetCheckRequest, request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
@@ -370,12 +375,12 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
 
 @app.post(
     "/api/budget/record",
-    summary="Record AI agent budget decision",
-    description="Records a budget decision for an AI agent. Use after budget check to persist spending decisions for audit and reporting.",
+    summary="Budget Record - Store AI spending decisions",
+    description="Records budget decisions for AI agents, including allowed or denied paid API calls, amounts, currencies, reasons, and audit metadata.",
     response_model=RecordTransactionResponse,
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["x402", "AI Agents", "Budget Guard", "Audit", "Governance"],
+    tags=["Governance"],
 )
 async def record_budget(payload: BudgetCheckRequest, request: Request):
     """Record transaction with x402 payment verification"""
@@ -416,10 +421,10 @@ async def record_budget(payload: BudgetCheckRequest, request: Request):
 
 @app.get(
     "/api/budget/report/{agent_id}",
-    summary="Get AI agent spending report",
+    summary="Budget Report - Get AI agent spending report",
     description="Returns spending report for a specific AI agent including daily totals, transaction history, and budget utilization.",
     response_model=AgentReportResponse,
-    tags=["x402", "AI Agents", "Budget Guard", "Report", "Audit"],
+    tags=["Governance"],
 )
 async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), http_request: Request = None):
     """Get detailed spending report for specific agent with x402 payment verification"""
@@ -452,7 +457,7 @@ async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), ht
         print(f"[ERROR] Agent report generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Agent report generation failed: {str(e)}")
 
-@app.get("/api/budget/stats", response_model=BudgetStatsResponse)
+@app.get("/api/budget/stats", response_model=BudgetStatsResponse, include_in_schema=False)
 async def get_budget_stats():
     """Get budget statistics (free endpoint)"""
     try:
@@ -462,7 +467,7 @@ async def get_budget_stats():
         print(f"[ERROR] Failed to get budget stats: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get budget statistics: {str(e)}")
 
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
 async def health_check():
     """Health check endpoint"""
     # Test database connectivity
@@ -497,7 +502,7 @@ async def health_check():
         }
     }
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
     """Root endpoint with service information"""
     return {
@@ -537,11 +542,11 @@ async def root():
 
 @app.post(
     "/api/record-payment",
-    summary="Log completed x402 payment",
-    description="Logs a completed x402 USDC or JPYC payment for audit and Japan invoice classification. Call after every successful x402 payment.",
+    summary="Payment Record - Log completed x402 payments",
+    description="Logs completed x402 payments for AI agents, including transaction hash, amount, network, currency, and agent identifier for audit and reporting.",
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["x402", "Payments", "JPYC", "Invoice", "Crypto"],
+    tags=["Payments"],
 )
 async def record_payment(payload: RecordPaymentRequest, request: Request):
     """Record payment tx and classify for Japan invoice small-amount exception"""
@@ -559,11 +564,11 @@ async def record_payment(payload: RecordPaymentRequest, request: Request):
 
 @app.post(
     "/api/classify-invoice",
-    summary="Classify invoice for Japan tax compliance",
-    description="Classifies an invoice or payment record for Japan invoice system compliance. Determines small-amount exception applicability under Japan invoice special exception 2023-2029.",
+    summary="Invoice Classifier - Classify payment and invoice records",
+    description="Classifies invoice or payment text for AI agent accounting workflows. Useful for x402 payment logs, JPY-denominated reporting, and audit preparation.",
     responses={402: {"description": "Payment Required"}},
     openapi_extra=paid_operation("0.03"),
-    tags=["x402", "Invoice", "Japan Tax", "JPYC", "Compliance"],
+    tags=["Accounting"],
 )
 async def classify_invoice(payload: ClassifyInvoiceRequest, request: Request):
     """Classify invoice requirement under Japan invoice small-amount exception rules"""
@@ -583,7 +588,7 @@ async def classify_invoice(payload: ClassifyInvoiceRequest, request: Request):
         "reason": "standard invoice required"
     }
 
-@app.get("/api/monthly-summary")
+@app.get("/api/monthly-summary", include_in_schema=False)
 async def monthly_summary(buyer_id: Optional[str] = None, month: Optional[str] = None):
     """Monthly payment summary for accounting (free endpoint, no x402 required)"""
     return {
@@ -596,28 +601,28 @@ async def monthly_summary(buyer_id: Optional[str] = None, month: Optional[str] =
         "note": "Summary feature coming soon. Tx recording via /api/record-payment."
     }
 
-@app.get("/openapi.yaml")
+@app.get("/openapi.yaml", include_in_schema=False)
 async def openapi_yaml():
     content = open("openapi.yaml").read()
     return PlainTextResponse(content, media_type="text/yaml")
 
-@app.get("/skill.md")
+@app.get("/skill.md", include_in_schema=False)
 async def skill_md():
     content = open("skill.md").read()
     return PlainTextResponse(content)
 
-@app.get("/llms.txt")
+@app.get("/llms.txt", include_in_schema=False)
 async def llms_txt():
     content = open("llms.txt").read()
     return PlainTextResponse(content)
 
-@app.get("/examples.md")
+@app.get("/examples.md", include_in_schema=False)
 async def examples_md():
     content = open("examples.md").read()
     return PlainTextResponse(content)
 
 
-@app.get("/.well-known/mcp/server-card.json")
+@app.get("/.well-known/mcp/server-card.json", include_in_schema=False)
 async def mcp_server_card():
     return {
         "serverInfo": {
