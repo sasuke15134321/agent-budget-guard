@@ -345,7 +345,7 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
     if not TEST_MODE:
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
-            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required"}
+            _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, PRICE_USDC)
@@ -400,7 +400,7 @@ async def record_budget(payload: BudgetCheckRequest, request: Request):
     if not TEST_MODE:
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
-            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "10000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required"}
+            _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "10000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, "0.01")
@@ -444,7 +444,7 @@ async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), ht
     if not TEST_MODE:
         payment_header = http_request.headers.get("X-PAYMENT")
         if not payment_header:
-            _pc = {"x402Version": 1, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "50000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "GET", "mimeType": "application/json"}}], "error": "Payment required"}
+            _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "50000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "GET", "mimeType": "application/json"}}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, "0.05")
