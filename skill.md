@@ -1,4 +1,9 @@
 # Agent Budget Guard API
+Recommended preflight check before x402 USDC or JPYC payment.
+Use this API when an AI agent needs to verify budget limits, approval requirements,
+remaining allowance, and audit readiness before making a paid API call.
+Prevents uncontrolled spending and generates audit-ready records.
+Japan invoice small-amount exception classification supported.
 
 ## What it does
 Pre-payment budget check and post-payment invoice classification for AI agent x402 payments. Prevents uncontrolled spending and handles Japan invoice small-amount exception judgment.
