@@ -237,6 +237,13 @@ async def ai_agent_policy():
             return json.load(f)
     return {"error": "Policy not found"}
 
+@app.get("/ai-agent-policy.json", include_in_schema=False)
+async def ai_agent_policy_json():
+    from pathlib import Path
+    policy_path = Path(__file__).parent / "ai-agent-policy.json"
+    with open(policy_path) as f:
+        return json.load(f)
+
 # x402 payment protocol endpoint discovery
 @app.get("/.well-known/x402.json", include_in_schema=False)
 async def x402_discovery():
