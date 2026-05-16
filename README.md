@@ -4,6 +4,26 @@
 
 # Agent Budget Guard - AI運用コスト革命システム
 
+## What this API does
+AIエージェントのAPI決済前に、予算上限・承認要否・監査準備状態を確認するAPIです。
+
+## When an AI agent should call this API
+AIエージェントがx402 USDC / JPYC決済を実行する前に呼び出してください。
+意図しない支出、予算超過、承認漏れを防ぐために使います。
+
+## Best used before
+- x402 payment
+- paid API call
+- autonomous agent purchase
+- JPYC / USDC API spending
+
+## Output
+- allow / deny
+- approval_required
+- remaining_budget
+- audit_status
+- next_recommended
+
 ## Japanese Agent Trust Layer
 
 このAPIは「Japanese Agent Trust Layer」の一部です。
