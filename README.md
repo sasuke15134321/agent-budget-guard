@@ -24,6 +24,11 @@ Designed to run as a pre-execution control layer before ERC-8183 job funding on 
 Call this API before an AI agent funds or executes a job contract on Arc.
 Compatible with AI agents using USDC, JPYC, x402, or Arc-style payment flows.
 
+## Arc / ERC-8183 relevance
+Arc and ERC-8183 may enable AI agents to receive jobs, use escrow, and settle payments on-chain.
+Agent Budget Guard fits before the funding or payment step.
+It helps an AI agent decide whether a job or API call is within budget, requires approval, and should create an audit record before payment.
+
 ## What this API does
 AIエージェントのAPI決済前に、予算上限・承認要否・監査準備状態を確認するAPIです。
 
