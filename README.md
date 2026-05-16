@@ -16,26 +16,28 @@ It includes structured information for:
 
 ## Why this matters
 AI is moving from answering questions to managing real workflows.
-Personal finance is an early example: AI can help users understand spending, subscriptions, investments, and budgets based on connected financial data.
-The next layer is not only human spending management, but also spending, safety, memory, and audit control for AI agents themselves.
 As AI agents begin to call paid APIs, use x402 payments, store long-term memory, and interact with other agents, they need structured guardrails before and after execution.
-This API is part of an AI Agent Payment Safety Stack.
+This API is part of an AI Agent Payment Safety Stack designed to run as a pre/post-execution control layer on Arc and other agent economies.
+
+## Arc compatibility
+Designed to run as a pre-execution control layer before ERC-8183 job funding on Arc testnet.
+Call this API before an AI agent funds or executes a job contract on Arc.
+Compatible with AI agents using USDC, JPYC, x402, or Arc-style payment flows.
 
 ## What this API does
 AIエージェントのAPI決済前に、予算上限・承認要否・監査準備状態を確認するAPIです。
 
 ## When an AI agent should call this API
-AIエージェントがx402 USDC / JPYC決済を実行する前に呼び出してください。
-意図しない支出、予算超過、承認漏れを防ぐために使います。
+AIエージェントがx402 USDC / JPYC決済またはArc上のERC-8183 job fundingを実行する前に呼び出してください。
 
 ## When not to use this API
 - 支払いを伴わない読み取り専用のAPI呼び出し
-- テスト環境でのドライラン（TEST_MODEを使用）
+- テスト環境でのドライラン
 
 ## Best used before
 - x402 payment
+- ERC-8183 job funding on Arc
 - paid API call
-- autonomous agent purchase
 - JPYC / USDC API spending
 
 ## Best used after
@@ -49,9 +51,9 @@ AIエージェントがx402 USDC / JPYC決済を実行する前に呼び出し�
 - next_recommended
 
 ## Related APIs
-- Agent Security Gateway: security scan before this check
-- Agent Memory API: store audit context after payment
-- Agent Evolution Engine: orchestrate full payment safety flow
+- Agent Security Gateway
+- Agent Memory API
+- Agent Evolution Engine
 
 ## Japanese Agent Trust Layer
 
