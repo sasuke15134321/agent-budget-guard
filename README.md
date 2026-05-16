@@ -60,6 +60,11 @@ AIエージェントがx402 USDC / JPYC決済またはArc上のERC-8183 job fund
 - Agent Memory API
 - Agent Evolution Engine
 
+## API Reference
+- OpenAPI: https://agent-budget-guard.onrender.com/openapi.json
+- llms.txt: https://agent-budget-guard.onrender.com/llms.txt
+- Demo: https://agent-budget-guard.onrender.com
+
 ## Japanese Agent Trust Layer
 
 このAPIは「Japanese Agent Trust Layer」の一部です。
