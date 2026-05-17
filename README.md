@@ -128,15 +128,6 @@ curl -X POST "https://agent-budget-guard.onrender.com/api/budget/record" \
 curl -X GET "https://agent-budget-guard.onrender.com/api/budget/report/agent_001" \
   -H "X-PAYMENT: your-payment-proof"
 
-# 異常支出検出・アラート (0.03 USDC)
-curl -X POST "https://agent-budget-guard.onrender.com/api/budget/anomaly" \
-  -H "X-PAYMENT: your-payment-proof" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_id": "agent_001",
-    "monitoring_period": "24h",
-    "sensitivity": "high"
-  }'
 ```
 
 ### Free Endpoints
