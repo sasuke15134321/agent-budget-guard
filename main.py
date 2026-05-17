@@ -244,9 +244,12 @@ class NextRecommendation(BaseModel):
 
 class BudgetCheckResponse(BaseModel):
     approved: bool
+    allow: bool
+    approval_required: bool
     reason: str
     current_daily_spend: float
     remaining_budget: float
+    audit_status: str
     risk_level: str
     warnings: List[str]
     next_recommended: NextRecommendation
@@ -422,6 +425,11 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
             approved=result["approved"],
             reason=result["reason"]
         )
+
+        # Map to Bazaar-required field names
+        result["allow"] = result["approved"]
+        result["approval_required"] = not result["approved"]
+        result["audit_status"] = "ready" if result["approved"] else "flagged"
 
         # Add cross-sell recommendation
         result["next_recommended"] = {
