@@ -212,10 +212,13 @@ async def startup_event():
 # Request models
 class BudgetCheckRequest(BaseModel):
     agent_id: Optional[str] = Field(default="default-agent", description="AI agent identifier")
-    amount: Optional[float] = Field(default=0.03, description="Requested payment amount in USDC")
+    amount: Optional[float] = Field(default=None, description="Requested payment amount in USDC")
+    requested_amount: Optional[float] = Field(default=None, description="Requested payment amount (alias for amount)")
     currency: Optional[str] = Field(default="USD", description="Currency: USD, USDC, JPYC, JPY")
     api_url: Optional[str] = Field(default=None, description="Target API URL")
+    target_api: Optional[str] = Field(default=None, description="Target API URL (alias for api_url)")
     daily_limit: Optional[float] = Field(default=5.0, description="Daily spend limit in USDC")
+    action_type: Optional[str] = Field(default=None, description="Action type")
 
 class RecordTransactionRequest(BaseModel):
     agent_id: Optional[str] = Field(default="default-agent", description="AI agent identifier")
@@ -425,10 +428,13 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
             raise HTTPException(status_code=402, detail="Payment verification failed")
 
     try:
+        effective_api_url = payload.api_url or payload.target_api or "unknown"
+        effective_amount = payload.amount or payload.requested_amount or 0.03
+
         result = await budget_engine.check_budget(
             agent_id=payload.agent_id,
-            api_url=payload.api_url,
-            amount_usdc=payload.amount,
+            api_url=effective_api_url,
+            amount_usdc=effective_amount,
             category="infrastructure",
             daily_limit=payload.daily_limit
         )
@@ -436,8 +442,8 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
         # Log budget check
         await budget_db.log_budget_check(
             agent_id=payload.agent_id,
-            api_url=payload.api_url,
-            amount_usdc=payload.amount,
+            api_url=effective_api_url,
+            amount_usdc=effective_amount,
             approved=result["approved"],
             reason=result["reason"]
         )
@@ -485,10 +491,13 @@ async def record_budget(payload: BudgetCheckRequest, request: Request):
             raise HTTPException(status_code=402, detail="Payment verification failed")
 
     try:
+        effective_api_url = payload.api_url or payload.target_api or "unknown"
+        effective_amount = payload.amount or payload.requested_amount or 0.01
+
         result = await budget_engine.record_transaction(
             agent_id=payload.agent_id,
-            api_url=payload.api_url,
-            amount_usdc=payload.amount,
+            api_url=effective_api_url,
+            amount_usdc=effective_amount,
             transaction_id=None,
             category="infrastructure"
         )
