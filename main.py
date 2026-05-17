@@ -155,7 +155,7 @@ async def x402_payment_middleware(request: Request, call_next):
     price = _PAID_ENDPOINTS.get(key) or (price_for_report if is_report else None)
 
     if not TEST_MODE and price is not None:
-        payment_header = request.headers.get("X-PAYMENT")
+        payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
         if not payment_header:
             amount = str(round(float(price) * 1_000_000))
             _accept = {
@@ -404,7 +404,7 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
 
     # Skip payment verification in test mode
     if not TEST_MODE:
-        payment_header = request.headers.get("X-PAYMENT")
+        payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
         if not payment_header:
             _pc = {
                 "x402Version": 2,
@@ -475,7 +475,7 @@ async def record_budget(payload: BudgetCheckRequest, request: Request):
 
     # Skip payment verification in test mode
     if not TEST_MODE:
-        payment_header = request.headers.get("X-PAYMENT")
+        payment_header = request.headers.get("PAYMENT-SIGNATURE") or request.headers.get("X-PAYMENT")
         if not payment_header:
             _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "10000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
@@ -519,7 +519,7 @@ async def get_agent_report(agent_id: str = Path(..., description="Agent ID"), ht
 
     # Skip payment verification in test mode
     if not TEST_MODE:
-        payment_header = http_request.headers.get("X-PAYMENT")
+        payment_header = http_request.headers.get("PAYMENT-SIGNATURE") or http_request.headers.get("X-PAYMENT")
         if not payment_header:
             _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "50000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "GET", "mimeType": "application/json"}}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
