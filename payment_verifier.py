@@ -239,7 +239,7 @@ class PaymentVerifier:
                     f"{_CDP_FACILITATOR_URL}/verify",
                     json={
                         "x402Version":        2,
-                        "payload":            payload_dict,
+                        "paymentPayload":     payload_dict,
                         "paymentRequirements": requirements,
                     },
                     headers={
@@ -259,7 +259,7 @@ class PaymentVerifier:
                     f"{_CDP_FACILITATOR_URL}/settle",
                     json={
                         "x402Version":        2,
-                        "payload":            payload_dict,
+                        "paymentPayload":     payload_dict,
                         "paymentRequirements": requirements,
                     },
                     headers={
