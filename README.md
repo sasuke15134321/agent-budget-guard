@@ -2,7 +2,17 @@
 > Agent Budget Guard is the pre-payment control layer for
 > JPYC / USDC / x402 AI agent payments.
 
-# Agent Budget Guard - AI運用コスト革命システム
+# Agent Budget Guard
+
+A working prototype API for checking AI agent budgets before paid API calls or x402 payments.
+
+## Disclaimer
+
+This is an independent experimental project.
+It is not officially affiliated with JPYC, Circle, Arc, Kaia, OpenAI, Anthropic, or any related foundation.
+
+This project references JPYC, x402, Arc, Kaia, USDC, and related protocols as technical contexts.
+It does not imply official partnership, endorsement, or integration unless explicitly stated.
 
 ## AEO-ready for AI agents
 This API is designed to be understandable and callable by AI agents.
@@ -84,48 +94,6 @@ AIエージェントがx402 USDC / JPYC決済またはArc上のERC-8183 job fund
 - 暗号化・削除証跡付き
 - Base Mainnet対応
 
-## 🚨 損失回避メッセージ
-**予算管理なしでは、AI運用費が年間3000万円無制限拡大、予算破綻による事業継続危機が発生します。**
-
-無管理なAI支出 → 想定外コスト発生 → 予算オーバー → キャッシュフロー圧迫 → 事業活動制限 → 競争力低下
-
-## 💰 期待利得の数値
-- **AI運用コスト50%削減**
-- **予算管理精度95%向上**
-- **ROI可視化完全実現**
-- **異常支出検出率99%達成**
-- **総合予算ROI: 800%**
-
-## 🎯 HARM分析
-
-### Health (生存リスクの除去)
-- 予算破綻による事業継続リスクの完全除去
-- AI支出の無制限拡大による資金ショート回避
-- コスト管理不備による投資家信頼失墜防止
-
-### Ambitions (収益・効率の向上)
-- AI投資ROI最大化による収益性向上
-- コスト構造の完全透明化で経営判断精度向上
-- 自動予算管理により人的リソース90%効率化
-
-### Relationships (連携可能なAPI)
-- **Agent Evolution API**: 進化コストの最適配分管理
-- **Agent Curator API**: コスト効率最適なAPI選択
-- **AI Trend Scout**: 投資トレンドに基づく予算計画
-
-### Money (ROI数値)
-- **投資対効果: 800%**
-- 予算管理投資1円でコスト削減8円
-- 年間AI運用コスト削減: 3000万円
-- 予算最適化による投資効率向上: 5000万円価値
-
-## 🔄 次に使うべきAPI（クロスセル）
-**Agent Curator API** - コスト効率最適なAPI選択により、さらなる運用費削減を実現します。
-
-## 💸 価格と投資対効果
-- **予算チェック: 0.04 USDC** → **50%コスト削減**
-- **支出記録: 0.01 USDC** → **完全な可視化**
-- **詳細レポート: 0.05 USDC** → **ROI最適化**
 
 ## ⚡ 実装方法
 
