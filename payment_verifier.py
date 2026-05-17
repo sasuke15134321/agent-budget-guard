@@ -15,6 +15,7 @@ import asyncio
 import base64
 import json
 import os
+import re
 import time
 import uuid
 from typing import Optional
@@ -58,20 +59,40 @@ def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
 
+def _normalize_pem(key_str: str) -> str:
+    """Normalize a PEM key string that may have lost newlines during env var storage."""
+    # Handle literal \n (two chars) → actual newline
+    if "\\n" in key_str and "\n" not in key_str:
+        key_str = key_str.replace("\\n", "\n")
+    key_str = key_str.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+    # If proper newlines exist, return as-is
+    if "\n-----" in key_str or "-----\n" in key_str:
+        return key_str + "\n"
+
+    # No newlines between header/body/footer — reconstruct PEM
+    header_m = re.match(r'^(-----BEGIN [A-Z ]+-----)', key_str)
+    footer_m = re.search(r'(-----END [A-Z ]+-----)$', key_str)
+    if header_m and footer_m:
+        header = header_m.group(1)
+        footer = footer_m.group(1)
+        body = key_str[len(header) : key_str.rfind(footer)].strip()
+        body = "".join(body.split())
+        lines = [body[i : i + 64] for i in range(0, len(body), 64)]
+        return header + "\n" + "\n".join(lines) + "\n" + footer + "\n"
+
+    return key_str
+
+
 def _generate_cdp_jwt(method: str, path: str) -> str:
-    """
-    Generate a CDP Platform API JWT (ES256) for the given request.
-    Uses `cryptography` (already available via x402[evm] → web3 → eth_account).
-    """
+    """Generate a CDP Platform API JWT (ES256) for the given request."""
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
-    key_pem = CDP_API_KEY_SECRET
-    if "\\n" in key_pem and "\n" not in key_pem:
-        key_pem = key_pem.replace("\\n", "\n")
-
-    private_key = serialization.load_pem_private_key(key_pem.encode(), password=None)
+    private_key = serialization.load_pem_private_key(
+        _normalize_pem(CDP_API_KEY_SECRET).encode(), password=None
+    )
 
     now = int(time.time())
     header  = {"alg": "ES256", "kid": CDP_API_KEY_ID, "nonce": uuid.uuid4().hex, "typ": "JWT"}
