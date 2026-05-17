@@ -2,25 +2,23 @@
 # -*- coding: utf-8 -*-
 """
 Payment verification for x402 protocol v2
-Verifies and settles payments via x402.org facilitator
+Embeds x402FacilitatorSync to verify and settle payments on-chain (Base mainnet)
 """
 
+import asyncio
 import base64
 import json
-import httpx
+import os
 from typing import Optional
 
-FACILITATOR_URL = "https://x402.org/facilitator"
+FACILITATOR_PRIVATE_KEY = os.getenv("FACILITATOR_PRIVATE_KEY", "")
+BASE_RPC_URL = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
 
-# Payment requirements for /api/budget/check (0.03 USDC on Base mainnet)
-_BASE_REQUIREMENTS = {
-    "scheme": "exact",
-    "network": "eip155:8453",
-    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE",
-    "maxTimeoutSeconds": 300,
-    "extra": {"name": "USD Coin", "version": "2"},
-}
+_WALLET_ADDRESS = "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
+_USDC_ADDRESS  = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+_NETWORK       = "eip155:8453"
+
+_facilitator = None
 
 
 def _decode_payment_header(payment_header: str) -> Optional[dict]:
@@ -36,12 +34,37 @@ def _decode_payment_header(payment_header: str) -> Optional[dict]:
         return None
 
 
+def _get_facilitator():
+    """Lazily initialize the embedded x402FacilitatorSync (once per process)."""
+    global _facilitator
+    if _facilitator is not None:
+        return _facilitator
+    if not FACILITATOR_PRIVATE_KEY:
+        print("[WARN] FACILITATOR_PRIVATE_KEY not set - v2 payment verification unavailable")
+        return None
+    try:
+        from x402.facilitator import x402FacilitatorSync
+        from x402.mechanisms.evm.exact import register_exact_evm_facilitator
+        from x402.mechanisms.evm.signers import FacilitatorWeb3Signer
+
+        signer = FacilitatorWeb3Signer(
+            private_key=FACILITATOR_PRIVATE_KEY,
+            rpc_url=BASE_RPC_URL,
+        )
+        fac = x402FacilitatorSync()
+        register_exact_evm_facilitator(fac, signer, networks=[_NETWORK])
+        _facilitator = fac
+        print(f"[x402] Embedded facilitator ready: {signer.address} on {_NETWORK}")
+        return _facilitator
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize facilitator: {e}")
+        return None
+
+
 class PaymentVerifier:
     def __init__(self):
         self.supported_networks = ["eip155:8453", "base", "base-mainnet"]
-        self.supported_assets = {
-            "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDC"
-        }
+        self.supported_assets = {_USDC_ADDRESS: "USDC"}
 
     async def verify_payment(
         self,
@@ -49,68 +72,73 @@ class PaymentVerifier:
         wallet_address: str,
         expected_amount: str,
     ) -> bool:
-        """
-        Verify and settle x402 v2 payment via x402.org facilitator.
-        Falls back to legacy txHash-based verification for v1 payments.
-        """
-        payload = _decode_payment_header(payment_header)
-        if payload is None:
+        """Verify and settle an x402 payment (v2 on-chain, v1 legacy txHash)."""
+        payload_dict = _decode_payment_header(payment_header)
+        if payload_dict is None:
             print("[WARN] Could not decode payment header")
             return False
 
-        x402_version = payload.get("x402Version", 1)
-
+        x402_version = payload_dict.get("x402Version", 1)
         if x402_version == 2:
-            return await self._verify_v2(payload, wallet_address, expected_amount)
-        else:
-            return self._verify_legacy(payload, wallet_address, expected_amount)
+            return await self._verify_v2(payload_dict, wallet_address, expected_amount)
+        return self._verify_legacy(payload_dict, wallet_address, expected_amount)
 
     async def _verify_v2(
         self,
-        payload: dict,
+        payload_dict: dict,
         wallet_address: str,
         expected_amount: str,
     ) -> bool:
-        """Verify x402 v2 payment via facilitator verify + settle."""
-        amount_units = str(round(float(expected_amount) * 1_000_000))
-
-        requirements = {
-            **_BASE_REQUIREMENTS,
-            "amount": amount_units,
-        }
+        """Verify + settle v2 payment via embedded x402FacilitatorSync."""
+        facilitator = _get_facilitator()
+        if facilitator is None:
+            return False
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                # Step 1: verify
-                verify_resp = await client.post(
-                    f"{FACILITATOR_URL}/verify",
-                    json={"payload": payload, "paymentRequirements": requirements},
-                )
-                verify_data = verify_resp.json()
-                print(f"[x402] verify status={verify_resp.status_code} valid={verify_data.get('isValid')}")
+            from x402.schemas import PaymentPayload, PaymentRequirements
 
-                if not verify_data.get("isValid"):
-                    print(f"[WARN] Payment verification failed: {verify_data.get('invalidReason')}")
-                    return False
+            payment_payload = PaymentPayload.model_validate(payload_dict)
+            amount_units   = str(round(float(expected_amount) * 1_000_000))
+            pay_to         = wallet_address or _WALLET_ADDRESS
 
-                # Step 2: settle
-                settle_resp = await client.post(
-                    f"{FACILITATOR_URL}/settle",
-                    json={"payload": payload, "paymentRequirements": requirements},
-                )
-                settle_data = settle_resp.json()
-                print(f"[x402] settle status={settle_resp.status_code} success={settle_data.get('success')}")
+            requirements = PaymentRequirements(
+                scheme="exact",
+                network=_NETWORK,
+                asset=_USDC_ADDRESS,
+                amount=amount_units,
+                pay_to=pay_to,
+                max_timeout_seconds=300,
+                extra={"name": "USD Coin", "version": "2"},
+            )
+        except Exception as e:
+            print(f"[WARN] Failed to build payment objects: {e}")
+            return False
 
-                if settle_data.get("success"):
-                    tx_hash = settle_data.get("txHash") or settle_data.get("transaction", {}).get("hash")
-                    print(f"[OK] Payment settled: {expected_amount} USDC tx={tx_hash}")
-                    return True
-                else:
-                    print(f"[WARN] Settlement failed: {settle_data.get('error')}")
-                    return False
+        try:
+            # Run blocking web3 calls in a thread to avoid blocking the event loop
+            verify_result = await asyncio.to_thread(
+                facilitator.verify, payment_payload, requirements
+            )
+            print(f"[x402] verify: is_valid={verify_result.is_valid} reason={verify_result.invalid_reason}")
+
+            if not verify_result.is_valid:
+                print(f"[WARN] Payment invalid: {verify_result.invalid_reason} - {verify_result.invalid_message}")
+                return False
+
+            settle_result = await asyncio.to_thread(
+                facilitator.settle, payment_payload, requirements
+            )
+            print(f"[x402] settle: success={settle_result.success} tx={settle_result.transaction}")
+
+            if settle_result.success:
+                print(f"[OK] Payment settled: {expected_amount} USDC tx={settle_result.transaction}")
+                return True
+
+            print(f"[WARN] Settlement failed: {settle_result.error_reason} - {settle_result.error_message}")
+            return False
 
         except Exception as e:
-            print(f"[ERROR] Facilitator call failed: {e}")
+            print(f"[ERROR] Facilitator error: {e}")
             return False
 
     def _verify_legacy(
@@ -135,17 +163,17 @@ class PaymentVerifier:
             return False
 
         if payment_data["to"].lower() != wallet_address.lower():
-            print(f"[WARN] Payment recipient mismatch")
+            print("[WARN] Payment recipient mismatch")
             return False
 
         expected_wei = int(float(expected_amount) * 1_000_000)
         if int(payment_data["amount"]) < expected_wei:
-            print(f"[WARN] Insufficient payment amount")
+            print("[WARN] Insufficient payment amount")
             return False
 
         tx_hash = payment_data["txHash"]
         if not tx_hash.startswith("0x") or len(tx_hash) != 66:
-            print(f"[WARN] Invalid transaction hash format")
+            print("[WARN] Invalid transaction hash format")
             return False
 
         print(f"[OK] Legacy payment verified: {int(payment_data['amount']) / 1_000_000} USDC")
@@ -158,11 +186,15 @@ class PaymentVerifier:
         return {
             "x402Version": 2,
             "accepts": [{
-                **_BASE_REQUIREMENTS,
+                "scheme": "exact",
+                "network": _NETWORK,
+                "asset": _USDC_ADDRESS,
                 "amount": str(amount_wei),
+                "payTo": wallet_address,
+                "maxTimeoutSeconds": 300,
+                "extra": {"name": "USD Coin", "version": "2"},
                 "resource": resource_url,
                 "description": description,
                 "mimeType": "application/json",
-                "payTo": wallet_address,
             }]
         }
