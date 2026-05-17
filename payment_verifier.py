@@ -22,7 +22,7 @@ from typing import Optional
 
 # ── CDP Facilitator ────────────────────────────────────────────────────────────
 CDP_API_KEY_ID     = os.getenv("CDP_API_KEY_ID", "")
-CDP_API_KEY_SECRET = os.getenv("CDP_API_KEY_SECRET", "")
+CDP_API_KEY_SECRET = os.getenv("CDP_API_KEY_SECRET", "").replace("\\n", "\n")
 
 _CDP_FACILITATOR_URL  = "https://api.cdp.coinbase.com/platform/v2/x402/facilitator"
 _CDP_HOST             = "api.cdp.coinbase.com"
