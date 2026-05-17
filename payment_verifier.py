@@ -24,10 +24,10 @@ from typing import Optional
 CDP_API_KEY_ID     = os.getenv("CDP_API_KEY_ID", "")
 CDP_API_KEY_SECRET = os.getenv("CDP_API_KEY_SECRET", "").replace("\\n", "\n")
 
-_CDP_FACILITATOR_URL  = "https://api.cdp.coinbase.com/platform/v2/x402/facilitator"
+_CDP_FACILITATOR_URL  = "https://api.cdp.coinbase.com/platform/v2/x402"
 _CDP_HOST             = "api.cdp.coinbase.com"
-_CDP_VERIFY_PATH      = "/platform/v2/x402/facilitator/verify"
-_CDP_SETTLE_PATH      = "/platform/v2/x402/facilitator/settle"
+_CDP_VERIFY_PATH      = "/platform/v2/x402/verify"
+_CDP_SETTLE_PATH      = "/platform/v2/x402/settle"
 
 # ── Embedded facilitator (fallback) ───────────────────────────────────────────
 FACILITATOR_PRIVATE_KEY = os.getenv("FACILITATOR_PRIVATE_KEY", "")
