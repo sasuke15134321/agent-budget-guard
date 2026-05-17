@@ -84,19 +84,47 @@ def _normalize_pem(key_str: str) -> str:
     return key_str
 
 
+def _load_cdp_private_key():
+    """Load CDP private key: supports PEM format and raw base64 (64-byte EC P-256)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    raw = CDP_API_KEY_SECRET
+
+    # Try PEM first
+    normalized = _normalize_pem(raw)
+    if "BEGIN" in normalized:
+        try:
+            return serialization.load_pem_private_key(normalized.encode(), password=None)
+        except Exception as e:
+            print(f"[WARN] PEM load failed: {e}")
+
+    # Try raw base64 → EC P-256 private scalar (first 32 bytes)
+    try:
+        # Try standard base64 then URL-safe
+        try:
+            key_bytes = base64.b64decode(raw)
+        except Exception:
+            key_bytes = base64.urlsafe_b64decode(raw + "==")
+
+        print(f"[CDP_KEY_DEBUG] raw bytes={len(key_bytes)}")
+
+        if len(key_bytes) >= 32:
+            key_int = int.from_bytes(key_bytes[:32], "big")
+            return ec.derive_private_key(key_int, ec.SECP256R1())
+    except Exception as e:
+        print(f"[WARN] raw EC P-256 load failed: {e}")
+
+    raise ValueError(f"Cannot load CDP private key (len={len(raw)})")
+
+
 def _generate_cdp_jwt(method: str, path: str) -> str:
     """Generate a CDP Platform API JWT (ES256) for the given request."""
-    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
-    raw = CDP_API_KEY_SECRET
-    print(f"[CDP_KEY_DEBUG] len={len(raw)} starts={repr(raw[:40])} ends={repr(raw[-30:])}")
-    normalized = _normalize_pem(raw)
-    print(f"[CDP_KEY_DEBUG] normalized first_line={repr(normalized.split(chr(10))[0])} lines={normalized.count(chr(10))}")
-    private_key = serialization.load_pem_private_key(
-        normalized.encode(), password=None
-    )
+    private_key = _load_cdp_private_key()
 
     now = int(time.time())
     header  = {"alg": "ES256", "kid": CDP_API_KEY_ID, "nonce": uuid.uuid4().hex, "typ": "JWT"}
