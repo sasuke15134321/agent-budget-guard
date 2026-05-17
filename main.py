@@ -99,6 +99,49 @@ _ENDPOINT_DESCRIPTIONS = {
     "/api/classify-invoice": "Classify an invoice or payment record for tax/accounting purposes",
 }
 
+# CDP Bazaar indexing extension for /api/budget/check
+_BAZAAR_EXTENSIONS = {
+    "bazaar": {
+        "info": {
+            "input": {
+                "type": "http",
+                "method": "POST",
+                "bodyType": "json",
+                "body": {
+                    "agent_id": "agent_001",
+                    "requested_amount": 0.03,
+                    "currency": "USDC",
+                    "target_api": "https://example.com/api/paid",
+                    "action_type": "x402_payment"
+                }
+            },
+            "output": {
+                "type": "json",
+                "example": {
+                    "allow": True,
+                    "approval_required": False,
+                    "remaining_budget": 0.97,
+                    "audit_status": "ready",
+                    "risk_level": "low",
+                    "next_recommended": "proceed_with_x402_payment"
+                }
+            }
+        },
+        "schema": {
+            "type": "object",
+            "properties": {
+                "allow": {"type": "boolean"},
+                "approval_required": {"type": "boolean"},
+                "remaining_budget": {"type": "number"},
+                "audit_status": {"type": "string"},
+                "risk_level": {"type": "string"},
+                "next_recommended": {"type": "string"}
+            },
+            "required": ["allow", "approval_required", "remaining_budget", "audit_status", "risk_level", "next_recommended"]
+        }
+    }
+}
+
 @app.middleware("http")
 async def x402_payment_middleware(request: Request, call_next):
     """Pydantic バリデーションより先に支払いヘッダーをチェックする"""
@@ -116,6 +159,18 @@ async def x402_payment_middleware(request: Request, call_next):
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
             amount = str(round(float(price) * 1_000_000))
+            _accept = {
+                "scheme": "exact",
+                "network": "eip155:8453",
+                "amount": amount,
+                "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE",
+                "maxTimeoutSeconds": 300,
+                "extra": {"name": "USD Coin", "version": "2"},
+                "resource": {"method": method, "mimeType": "application/json"},
+            }
+            if path == "/api/budget/check":
+                _accept["extensions"] = _BAZAAR_EXTENSIONS
             _pc = {
                 "x402Version": 2,
                 "error": "Payment required",
@@ -125,16 +180,7 @@ async def x402_payment_middleware(request: Request, call_next):
                     "description": _ENDPOINT_DESCRIPTIONS.get(path, "Paid API endpoint"),
                     "mimeType": "application/json",
                 },
-                "accepts": [{
-                    "scheme": "exact",
-                    "network": "eip155:8453",
-                    "amount": amount,
-                    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                    "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE",
-                    "maxTimeoutSeconds": 300,
-                    "extra": {"name": "USD Coin", "version": "2"},
-                    "resource": {"method": method, "mimeType": "application/json"},
-                }],
+                "accepts": [_accept],
             }
             return JSONResponse(
                 status_code=402,
@@ -352,7 +398,7 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
     if not TEST_MODE:
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
-            _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required"}
+            _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}, "extensions": _BAZAAR_EXTENSIONS}], "error": "Payment required"}
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, PRICE_USDC)
