@@ -197,9 +197,14 @@ class PaymentVerifier:
     # ── v2: CDP Facilitator (primary) ─────────────────────────────────────────
 
     async def _verify_v2(self, payload_dict: dict, wallet_address: str, expected_amount: str) -> bool:
-        print(f"[x402] _verify_v2: wallet_address={repr(wallet_address)} amount={expected_amount} cdp_keys={'yes' if (CDP_API_KEY_ID and CDP_API_KEY_SECRET) else 'no'}")
         if CDP_API_KEY_ID and CDP_API_KEY_SECRET:
-            return await self._verify_v2_cdp(payload_dict, wallet_address, expected_amount)
+            try:
+                result = await self._verify_v2_cdp(payload_dict, wallet_address, expected_amount)
+                if result:
+                    return True
+            except Exception as e:
+                print(f"[WARN] CDP path exception: {e}")
+            print("[WARN] CDP failed, falling back to embedded facilitator")
         return await self._verify_v2_embedded(payload_dict, wallet_address, expected_amount)
 
     async def _verify_v2_cdp(
