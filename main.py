@@ -587,7 +587,7 @@ async def health_check():
         "network": NETWORK,
         "wallet_configured": bool(os.getenv("WALLET_ADDRESS")),
         "cdp_configured": bool(os.getenv("CDP_API_KEY_ID") and os.getenv("CDP_API_KEY_SECRET")),
-        "build": "7885609",
+        "build": "f8540ef",
         "services": {
             "budget_engine": engine_status,
             "database": database_status,
