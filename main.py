@@ -182,6 +182,12 @@ async def x402_payment_middleware(request: Request, call_next):
             }
             if path == "/api/budget/check":
                 _pc["extensions"] = _BAZAAR_EXTENSIONS
+                _pc["allow"] = False
+                _pc["approval_required"] = True
+                _pc["remaining_budget"] = None
+                _pc["audit_status"] = "payment_required"
+                _pc["risk_level"] = "unknown"
+                _pc["next_recommended"] = "complete_x402_payment"
             return JSONResponse(
                 status_code=402,
                 content=_pc,
@@ -401,7 +407,18 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
     if not TEST_MODE:
         payment_header = request.headers.get("X-PAYMENT")
         if not payment_header:
-            _pc = {"x402Version": 2, "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}], "error": "Payment required", "extensions": _BAZAAR_EXTENSIONS}
+            _pc = {
+                "x402Version": 2,
+                "error": "Payment required",
+                "accepts": [{"scheme": "exact", "network": "eip155:8453", "maxAmountRequired": "30000", "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "payTo": "0x60c402878EfcEcAe5733A88075328Aa2320C39BE", "maxTimeoutSeconds": 300, "resource": {"method": "POST", "mimeType": "application/json"}}],
+                "extensions": _BAZAAR_EXTENSIONS,
+                "allow": False,
+                "approval_required": True,
+                "remaining_budget": None,
+                "audit_status": "payment_required",
+                "risk_level": "unknown",
+                "next_recommended": "complete_x402_payment",
+            }
             return JSONResponse(status_code=402, content=_pc, headers={"PAYMENT-REQUIRED": base64.b64encode(json.dumps(_pc).encode()).decode()})
 
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, PRICE_USDC)
