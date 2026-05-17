@@ -136,8 +136,7 @@ _BAZAAR_EXTENSIONS = {
                 "audit_status": {"type": "string"},
                 "risk_level": {"type": "string"},
                 "next_recommended": {"type": "string"}
-            },
-            "required": ["allow", "approval_required", "remaining_budget", "audit_status", "risk_level", "next_recommended"]
+            }
         }
     }
 }
