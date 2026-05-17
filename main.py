@@ -585,6 +585,9 @@ async def health_check():
         "status": "healthy",
         "test_mode": TEST_MODE,
         "network": NETWORK,
+        "wallet_configured": bool(os.getenv("WALLET_ADDRESS")),
+        "cdp_configured": bool(os.getenv("CDP_API_KEY_ID") and os.getenv("CDP_API_KEY_SECRET")),
+        "build": "df5508d",
         "services": {
             "budget_engine": engine_status,
             "database": database_status,
