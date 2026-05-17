@@ -2,30 +2,50 @@
 # -*- coding: utf-8 -*-
 """
 Payment verification for x402 protocol v2
-Embeds x402FacilitatorSync to verify and settle payments on-chain (Base mainnet)
+
+Priority:
+  1. CDP Facilitator  (CDP_API_KEY_ID + CDP_API_KEY_SECRET set)
+     -> verify + settle via https://api.cdp.coinbase.com/platform/v2/x402/facilitator
+     -> auto-registers resource in CDP Bazaar on successful settle
+  2. Embedded x402FacilitatorSync  (FACILITATOR_PRIVATE_KEY set)
+     -> fallback: direct on-chain settlement
 """
 
 import asyncio
 import base64
 import json
 import os
+import time
+import uuid
 from typing import Optional
 
+# ── CDP Facilitator ────────────────────────────────────────────────────────────
+CDP_API_KEY_ID     = os.getenv("CDP_API_KEY_ID", "")
+CDP_API_KEY_SECRET = os.getenv("CDP_API_KEY_SECRET", "")
+
+_CDP_FACILITATOR_URL  = "https://api.cdp.coinbase.com/platform/v2/x402/facilitator"
+_CDP_HOST             = "api.cdp.coinbase.com"
+_CDP_VERIFY_PATH      = "/platform/v2/x402/facilitator/verify"
+_CDP_SETTLE_PATH      = "/platform/v2/x402/facilitator/settle"
+
+# ── Embedded facilitator (fallback) ───────────────────────────────────────────
 FACILITATOR_PRIVATE_KEY = os.getenv("FACILITATOR_PRIVATE_KEY", "")
-BASE_RPC_URL = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
+BASE_RPC_URL            = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
 
+# ── Common constants ──────────────────────────────────────────────────────────
 _WALLET_ADDRESS = "0x60c402878EfcEcAe5733A88075328Aa2320C39BE"
-_USDC_ADDRESS  = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-_NETWORK       = "eip155:8453"
+_USDC_ADDRESS   = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+_NETWORK        = "eip155:8453"
 
-_facilitator = None
+_embedded_facilitator = None
 
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _decode_payment_header(payment_header: str) -> Optional[dict]:
     """Decode base64-encoded PAYMENT-SIGNATURE or X-PAYMENT header."""
     try:
-        decoded = base64.b64decode(payment_header).decode("utf-8")
-        return json.loads(decoded)
+        return json.loads(base64.b64decode(payment_header).decode("utf-8"))
     except Exception:
         pass
     try:
@@ -34,37 +54,76 @@ def _decode_payment_header(payment_header: str) -> Optional[dict]:
         return None
 
 
-def _get_facilitator():
-    """Lazily initialize the embedded x402FacilitatorSync (once per process)."""
-    global _facilitator
-    if _facilitator is not None:
-        return _facilitator
+def _b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+def _generate_cdp_jwt(method: str, path: str) -> str:
+    """
+    Generate a CDP Platform API JWT (ES256) for the given request.
+    Uses `cryptography` (already available via x402[evm] → web3 → eth_account).
+    """
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+    key_pem = CDP_API_KEY_SECRET
+    if "\\n" in key_pem and "\n" not in key_pem:
+        key_pem = key_pem.replace("\\n", "\n")
+
+    private_key = serialization.load_pem_private_key(key_pem.encode(), password=None)
+
+    now = int(time.time())
+    header  = {"alg": "ES256", "kid": CDP_API_KEY_ID, "nonce": uuid.uuid4().hex, "typ": "JWT"}
+    payload = {
+        "sub": CDP_API_KEY_ID,
+        "iss": "cdp",
+        "nbf": now,
+        "exp": now + 120,
+        "uris": [f"{method} {_CDP_HOST}{path}"],
+    }
+
+    h_b64 = _b64url(json.dumps(header,  separators=(",", ":")).encode())
+    p_b64 = _b64url(json.dumps(payload, separators=(",", ":")).encode())
+    signing_input = f"{h_b64}.{p_b64}".encode()
+
+    der_sig  = private_key.sign(signing_input, ec.ECDSA(hashes.SHA256()))
+    r, s     = decode_dss_signature(der_sig)
+    raw_sig  = r.to_bytes(32, "big") + s.to_bytes(32, "big")
+
+    return f"{h_b64}.{p_b64}.{_b64url(raw_sig)}"
+
+
+def _get_embedded_facilitator():
+    """Lazily initialize the embedded x402FacilitatorSync (fallback path)."""
+    global _embedded_facilitator
+    if _embedded_facilitator is not None:
+        return _embedded_facilitator
     if not FACILITATOR_PRIVATE_KEY:
-        print("[WARN] FACILITATOR_PRIVATE_KEY not set - v2 payment verification unavailable")
+        print("[WARN] No CDP credentials and no FACILITATOR_PRIVATE_KEY — v2 payment verification unavailable")
         return None
     try:
         from x402.facilitator import x402FacilitatorSync
         from x402.mechanisms.evm.exact import register_exact_evm_facilitator
         from x402.mechanisms.evm.signers import FacilitatorWeb3Signer
 
-        signer = FacilitatorWeb3Signer(
-            private_key=FACILITATOR_PRIVATE_KEY,
-            rpc_url=BASE_RPC_URL,
-        )
-        fac = x402FacilitatorSync()
+        signer = FacilitatorWeb3Signer(private_key=FACILITATOR_PRIVATE_KEY, rpc_url=BASE_RPC_URL)
+        fac    = x402FacilitatorSync()
         register_exact_evm_facilitator(fac, signer, networks=[_NETWORK])
-        _facilitator = fac
-        print(f"[x402] Embedded facilitator ready: {signer.address} on {_NETWORK}")
-        return _facilitator
+        _embedded_facilitator = fac
+        print(f"[x402] Embedded facilitator ready (fallback): {signer.address}")
+        return _embedded_facilitator
     except Exception as e:
-        print(f"[ERROR] Failed to initialize facilitator: {e}")
+        print(f"[ERROR] Embedded facilitator init failed: {e}")
         return None
 
+
+# ── PaymentVerifier ───────────────────────────────────────────────────────────
 
 class PaymentVerifier:
     def __init__(self):
         self.supported_networks = ["eip155:8453", "base", "base-mainnet"]
-        self.supported_assets = {_USDC_ADDRESS: "USDC"}
+        self.supported_assets   = {_USDC_ADDRESS: "USDC"}
 
     async def verify_payment(
         self,
@@ -72,25 +131,106 @@ class PaymentVerifier:
         wallet_address: str,
         expected_amount: str,
     ) -> bool:
-        """Verify and settle an x402 payment (v2 on-chain, v1 legacy txHash)."""
+        """Verify and settle an x402 payment (v2 CDP/embedded, v1 txHash legacy)."""
         payload_dict = _decode_payment_header(payment_header)
         if payload_dict is None:
             print("[WARN] Could not decode payment header")
             return False
 
-        x402_version = payload_dict.get("x402Version", 1)
-        if x402_version == 2:
+        if payload_dict.get("x402Version", 1) == 2:
             return await self._verify_v2(payload_dict, wallet_address, expected_amount)
         return self._verify_legacy(payload_dict, wallet_address, expected_amount)
 
-    async def _verify_v2(
+    # ── v2: CDP Facilitator (primary) ─────────────────────────────────────────
+
+    async def _verify_v2(self, payload_dict: dict, wallet_address: str, expected_amount: str) -> bool:
+        if CDP_API_KEY_ID and CDP_API_KEY_SECRET:
+            return await self._verify_v2_cdp(payload_dict, wallet_address, expected_amount)
+        return await self._verify_v2_embedded(payload_dict, wallet_address, expected_amount)
+
+    async def _verify_v2_cdp(
         self,
         payload_dict: dict,
         wallet_address: str,
         expected_amount: str,
     ) -> bool:
-        """Verify + settle v2 payment via embedded x402FacilitatorSync."""
-        facilitator = _get_facilitator()
+        """Verify + settle via CDP Facilitator (auto-registers in Bazaar on success)."""
+        import httpx
+
+        amount_units = str(round(float(expected_amount) * 1_000_000))
+        pay_to       = wallet_address or _WALLET_ADDRESS
+
+        requirements = {
+            "scheme":            "exact",
+            "network":           _NETWORK,
+            "asset":             _USDC_ADDRESS,
+            "amount":            amount_units,
+            "payTo":             pay_to,
+            "maxTimeoutSeconds": 300,
+            "extra":             {"name": "USD Coin", "version": "2"},
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+
+                # Step 1: verify
+                verify_resp = await client.post(
+                    f"{_CDP_FACILITATOR_URL}/verify",
+                    json={
+                        "x402Version":        2,
+                        "payload":            payload_dict,
+                        "paymentRequirements": requirements,
+                    },
+                    headers={
+                        "Authorization": f"Bearer {_generate_cdp_jwt('POST', _CDP_VERIFY_PATH)}",
+                        "Content-Type":  "application/json",
+                    },
+                )
+                verify_data = verify_resp.json()
+                print(f"[x402/CDP] verify status={verify_resp.status_code} isValid={verify_data.get('isValid')}")
+
+                if not verify_data.get("isValid"):
+                    print(f"[WARN] CDP verify failed: {verify_data.get('invalidReason')} - {verify_data.get('invalidMessage')}")
+                    return False
+
+                # Step 2: settle
+                settle_resp = await client.post(
+                    f"{_CDP_FACILITATOR_URL}/settle",
+                    json={
+                        "x402Version":        2,
+                        "payload":            payload_dict,
+                        "paymentRequirements": requirements,
+                    },
+                    headers={
+                        "Authorization": f"Bearer {_generate_cdp_jwt('POST', _CDP_SETTLE_PATH)}",
+                        "Content-Type":  "application/json",
+                    },
+                )
+                settle_data = settle_resp.json()
+                print(f"[x402/CDP] settle status={settle_resp.status_code} success={settle_data.get('success')}")
+
+                if settle_data.get("success"):
+                    tx = settle_data.get("transaction", "")
+                    print(f"[OK] Payment settled via CDP Facilitator: {expected_amount} USDC tx={tx}")
+                    return True
+
+                print(f"[WARN] CDP settle failed: {settle_data}")
+                return False
+
+        except Exception as e:
+            print(f"[ERROR] CDP Facilitator error: {e}")
+            return False
+
+    # ── v2: embedded facilitator (fallback) ───────────────────────────────────
+
+    async def _verify_v2_embedded(
+        self,
+        payload_dict: dict,
+        wallet_address: str,
+        expected_amount: str,
+    ) -> bool:
+        """Verify + settle via embedded x402FacilitatorSync (fallback)."""
+        facilitator = _get_embedded_facilitator()
         if facilitator is None:
             return False
 
@@ -98,8 +238,8 @@ class PaymentVerifier:
             from x402.schemas import PaymentPayload, PaymentRequirements
 
             payment_payload = PaymentPayload.model_validate(payload_dict)
-            amount_units   = str(round(float(expected_amount) * 1_000_000))
-            pay_to         = wallet_address or _WALLET_ADDRESS
+            amount_units    = str(round(float(expected_amount) * 1_000_000))
+            pay_to          = wallet_address or _WALLET_ADDRESS
 
             requirements = PaymentRequirements(
                 scheme="exact",
@@ -115,41 +255,30 @@ class PaymentVerifier:
             return False
 
         try:
-            # Run blocking web3 calls in a thread to avoid blocking the event loop
-            verify_result = await asyncio.to_thread(
-                facilitator.verify, payment_payload, requirements
-            )
-            print(f"[x402] verify: is_valid={verify_result.is_valid} reason={verify_result.invalid_reason}")
-
+            verify_result = await asyncio.to_thread(facilitator.verify, payment_payload, requirements)
+            print(f"[x402/embedded] verify: is_valid={verify_result.is_valid} reason={verify_result.invalid_reason}")
             if not verify_result.is_valid:
-                print(f"[WARN] Payment invalid: {verify_result.invalid_reason} - {verify_result.invalid_message}")
+                print(f"[WARN] Embedded verify failed: {verify_result.invalid_reason} - {verify_result.invalid_message}")
                 return False
 
-            settle_result = await asyncio.to_thread(
-                facilitator.settle, payment_payload, requirements
-            )
-            print(f"[x402] settle: success={settle_result.success} tx={settle_result.transaction}")
-
+            settle_result = await asyncio.to_thread(facilitator.settle, payment_payload, requirements)
+            print(f"[x402/embedded] settle: success={settle_result.success} tx={settle_result.transaction}")
             if settle_result.success:
-                print(f"[OK] Payment settled: {expected_amount} USDC tx={settle_result.transaction}")
+                print(f"[OK] Payment settled via embedded: {expected_amount} USDC tx={settle_result.transaction}")
                 return True
 
-            print(f"[WARN] Settlement failed: {settle_result.error_reason} - {settle_result.error_message}")
+            print(f"[WARN] Embedded settle failed: {settle_result.error_reason}")
             return False
 
         except Exception as e:
-            print(f"[ERROR] Facilitator error: {e}")
+            print(f"[ERROR] Embedded facilitator error: {e}")
             return False
 
-    def _verify_legacy(
-        self,
-        payment_data: dict,
-        wallet_address: str,
-        expected_amount: str,
-    ) -> bool:
+    # ── v1 legacy ─────────────────────────────────────────────────────────────
+
+    def _verify_legacy(self, payment_data: dict, wallet_address: str, expected_amount: str) -> bool:
         """Legacy v1 verification (txHash-based)."""
-        required_fields = ["amount", "asset", "network", "to", "txHash"]
-        for field in required_fields:
+        for field in ["amount", "asset", "network", "to", "txHash"]:
             if field not in payment_data:
                 print(f"[WARN] Missing required payment field: {field}")
                 return False
@@ -157,11 +286,9 @@ class PaymentVerifier:
         if payment_data["network"] not in self.supported_networks:
             print(f"[WARN] Unsupported network: {payment_data['network']}")
             return False
-
         if payment_data["asset"] not in self.supported_assets:
             print(f"[WARN] Unsupported asset: {payment_data['asset']}")
             return False
-
         if payment_data["to"].lower() != wallet_address.lower():
             print("[WARN] Payment recipient mismatch")
             return False
@@ -186,15 +313,15 @@ class PaymentVerifier:
         return {
             "x402Version": 2,
             "accepts": [{
-                "scheme": "exact",
-                "network": _NETWORK,
-                "asset": _USDC_ADDRESS,
-                "amount": str(amount_wei),
-                "payTo": wallet_address,
+                "scheme":            "exact",
+                "network":           _NETWORK,
+                "asset":             _USDC_ADDRESS,
+                "amount":            str(amount_wei),
+                "payTo":             wallet_address,
                 "maxTimeoutSeconds": 300,
-                "extra": {"name": "USD Coin", "version": "2"},
-                "resource": resource_url,
-                "description": description,
-                "mimeType": "application/json",
+                "extra":             {"name": "USD Coin", "version": "2"},
+                "resource":          resource_url,
+                "description":       description,
+                "mimeType":          "application/json",
             }]
         }
