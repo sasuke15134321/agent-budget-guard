@@ -90,8 +90,12 @@ def _generate_cdp_jwt(method: str, path: str) -> str:
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 
+    raw = CDP_API_KEY_SECRET
+    print(f"[CDP_KEY_DEBUG] len={len(raw)} starts={repr(raw[:40])} ends={repr(raw[-30:])}")
+    normalized = _normalize_pem(raw)
+    print(f"[CDP_KEY_DEBUG] normalized first_line={repr(normalized.split(chr(10))[0])} lines={normalized.count(chr(10))}")
     private_key = serialization.load_pem_private_key(
-        _normalize_pem(CDP_API_KEY_SECRET).encode(), password=None
+        normalized.encode(), password=None
     )
 
     now = int(time.time())
