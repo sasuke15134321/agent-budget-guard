@@ -131,6 +131,7 @@ def _generate_cdp_jwt(method: str, path: str) -> str:
     payload = {
         "sub": CDP_API_KEY_ID,
         "iss": "cdp",
+        "aud": ["cdp_service"],
         "nbf": now,
         "exp": now + 120,
         "uris": [f"{method} {_CDP_HOST}{path}"],
