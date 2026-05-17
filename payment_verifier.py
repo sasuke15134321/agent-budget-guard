@@ -144,6 +144,7 @@ class PaymentVerifier:
     # ── v2: CDP Facilitator (primary) ─────────────────────────────────────────
 
     async def _verify_v2(self, payload_dict: dict, wallet_address: str, expected_amount: str) -> bool:
+        print(f"[x402] _verify_v2: wallet_address={repr(wallet_address)} amount={expected_amount} cdp_keys={'yes' if (CDP_API_KEY_ID and CDP_API_KEY_SECRET) else 'no'}")
         if CDP_API_KEY_ID and CDP_API_KEY_SECRET:
             return await self._verify_v2_cdp(payload_dict, wallet_address, expected_amount)
         return await self._verify_v2_embedded(payload_dict, wallet_address, expected_amount)
@@ -159,6 +160,7 @@ class PaymentVerifier:
 
         amount_units = str(round(float(expected_amount) * 1_000_000))
         pay_to       = wallet_address or _WALLET_ADDRESS
+        print(f"[x402/CDP] using payTo={pay_to} amount={amount_units}")
 
         requirements = {
             "scheme":            "exact",
@@ -190,7 +192,7 @@ class PaymentVerifier:
                 print(f"[x402/CDP] verify status={verify_resp.status_code} isValid={verify_data.get('isValid')}")
 
                 if not verify_data.get("isValid"):
-                    print(f"[WARN] CDP verify failed: {verify_data.get('invalidReason')} - {verify_data.get('invalidMessage')}")
+                    print(f"[WARN] CDP verify failed: {verify_data.get('invalidReason')} - {verify_data.get('invalidMessage')} full={verify_data}")
                     return False
 
                 # Step 2: settle
