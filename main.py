@@ -87,7 +87,7 @@ def paid_operation(amount_usd: str) -> dict:
 # Paid endpoint config: (method, path) -> price in USD
 _PAID_ENDPOINTS = {
     ("POST", "/api/budget/check"):    "0.03",
-    ("POST", "/api/budget/record"):   "0.03",
+    ("POST", "/api/budget/record"):   "0.01",
     ("POST", "/api/record-payment"):  "0.03",
     ("POST", "/api/classify-invoice"): "0.03",
 }
