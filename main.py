@@ -184,7 +184,7 @@ async def x402_payment_middleware(request: Request, call_next):
                 _pc["extensions"] = _BAZAAR_EXTENSIONS
                 _pc["allow"] = False
                 _pc["approval_required"] = True
-                _pc["remaining_budget"] = None
+                _pc["remaining_budget"] = 0.0
                 _pc["audit_status"] = "payment_required"
                 _pc["risk_level"] = "unknown"
                 _pc["next_recommended"] = "complete_x402_payment"
@@ -414,7 +414,7 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
                 "extensions": _BAZAAR_EXTENSIONS,
                 "allow": False,
                 "approval_required": True,
-                "remaining_budget": None,
+                "remaining_budget": 0.0,
                 "audit_status": "payment_required",
                 "risk_level": "unknown",
                 "next_recommended": "complete_x402_payment",
