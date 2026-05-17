@@ -26,7 +26,7 @@ from database import budget_db
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0x")
 PRICE_USDC = os.getenv("PRICE_USDC", "0.03")
 NETWORK = os.getenv("NETWORK", "base-mainnet")
-TEST_MODE = os.getenv("TEST_MODE", "true").lower() == "true"
+TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
 
 app = FastAPI(
     title="Agent Budget Guard",
