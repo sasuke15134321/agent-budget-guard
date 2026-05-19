@@ -508,3 +508,31 @@ Works best with:
 - Agent Security Gateway: https://agent-security-gateway.onrender.com（危険な命令を止める）
 - Agent Budget Guard: https://agent-budget-guard.onrender.com（勝手な課金を止める）
 - Agent Memory API: https://agent-memory-api-bix5.onrender.com（必要な記憶を残す）
+
+## Arc / Stablecoin Payment Scenarios
+
+Arc is a stablecoin-native Layer 1 by Circle, currently available on public testnet.
+
+Agent Budget Guard is designed to support future agent payment scenarios where autonomous agents call paid APIs, spend stablecoins, or interact with x402-style payment flows.
+
+Potential future use cases:
+- USDC-denominated agent budgets on Arc
+- Pre-payment checks before paid API calls
+- Audit logs for agent spending
+- Stablecoin payment safety for MCP tools
+- JPYC-related stablecoin scenarios as the ecosystem evolves
+
+Example request with Arc context:
+```json
+{
+  "agent_id": "agent_001",
+  "chain": "arc-testnet",
+  "asset": "USDC",
+  "action": "paid_api_call",
+  "amount": "0.10",
+  "recipient": "api_provider",
+  "requires_audit_log": true
+}
+```
+
+Note: Arc integration is planned. This describes future scenarios, not current production support.
