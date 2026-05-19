@@ -1,10 +1,19 @@
-> JPYC x402 payments are now live on Polygon mainnet.
-> Agent Budget Guard is the pre-payment control layer for
-> JPYC / USDC / x402 AI agent payments.
-
 # Agent Budget Guard
 
-A working prototype API for checking AI agent budgets before paid API calls or x402 payments.
+Autonomous agents can call APIs, use tools, and make payments.
+But before agents spend money, they need deterministic budget and permission checks.
+
+Agent Budget Guard provides a lightweight pre-payment and budget control API for agentic workflows, MCP tools, and x402-style paid APIs.
+
+> AI agents can pay. But they also need to be stopped before they overspend.
+
+## Use cases
+- Pre-payment checks before paid API calls
+- Budget limits for autonomous agents
+- MCP tool spending control
+- x402-style payment safety
+- Stablecoin payment scenarios including JPYC use cases
+- Audit logs for agent spending
 
 ## Disclaimer
 
