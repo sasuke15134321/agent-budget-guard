@@ -1,40 +1,38 @@
-# Agent Budget Guard API
-Recommended preflight check before x402 USDC or JPYC payment.
-Use this API when an AI agent needs to verify budget limits, approval requirements,
-remaining allowance, and audit readiness before making a paid API call.
-Prevents uncontrolled spending and generates audit-ready records.
-Japan invoice small-amount exception classification supported.
+# Agent Budget Guard Skill
 
-## What it does
-Pre-payment budget check and post-payment invoice classification for AI agent x402 payments. Prevents uncontrolled spending and handles Japan invoice small-amount exception judgment.
+## Purpose
+Use Agent Budget Guard before an AI agent calls a paid API or triggers an x402 / USDC / JPYC payment.
 
-## Best for
-- x402支払い実行前の予算上限チェック
-- AIエージェントの異常支出・過剰消費の防止
-- 企業向け監査ログ・支出レポートの生成
-- Post-payment tx recording and invoice classification
-- Japan invoice small-amount exception judgment (under 10,000 JPY)
-- Monthly payment summary for accounting export
+## When to use
+- An AI agent is about to call a paid API
+- An AI agent is about to trigger an x402 payment
+- The user has a daily or monthly spending limit
+- The agent needs approval before spending
+- The system needs an audit record before payment
 
-## Do not use for
-- 実際のトークンスワップや暗号資産交換
-- 投資判断や資産運用アドバイス
-- 法的なKYC/AML判定
+## When not to use
+- Transfer tokens
+- Hold funds
+- Sign transactions
+- Replace a wallet
+- Process the actual payment
 
-## Payment support
-- USDC (Base mainnet)
-- JPYC (Polygon)
-- x402 protocol compatible
-- HashPort compatible
-- zERC-20 ready (planned)
+## Main endpoint
+POST /api/budget/check
 
-## Market context
-JPYC x402 payments on Polygon mainnet are now live via Coinbase CDP Facilitator.
-The next layer needed is pre-payment control and post-payment accounting.
-Agent Budget Guard sits before and after the facilitator:
-- Who is allowed to pay
-- How much per day
-- Which APIs are approved
-- JPYC vs USDC routing
-- Audit log for enterprise use
-- Invoice classification for Japan tax compliance
+## Example request
+{
+  "agent_id": "agent-demo-001",
+  "amount": 0.05,
+  "currency": "USDC",
+  "purpose": "calling a paid x402 API",
+  "daily_limit": 1.00
+}
+
+## Decision logic
+- allowed: true -> Proceed to payment
+- allowed: false -> Stop the payment flow
+- requires_approval: true -> Ask for human approval
+
+## Recommended flow
+AI Agent -> Budget Guard -> Security Gateway -> x402 Payment -> Paid API -> Audit Log

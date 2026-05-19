@@ -1,11 +1,56 @@
 # Agent Budget Guard
 
-Autonomous agents can call APIs, use tools, and make payments.
-But before agents spend money, they need deterministic budget and permission checks.
+A lightweight budget guard API for autonomous AI agents.
 
-Agent Budget Guard provides a lightweight pre-payment and budget control API for agentic workflows, MCP tools, and x402-style paid APIs.
+Before an AI agent calls a paid API, triggers an x402 payment, or spends USDC / JPYC,
+this API checks whether the spending is allowed.
 
-> AI agents can pay. But they also need to be stopped before they overspend.
+Placement:
+AI Agent -> Budget Guard -> x402 Payment -> Paid API
+
+What it checks:
+- Per-request spending amount
+- Daily budget limit
+- Monthly budget limit
+- Currency (USDC / JPYC)
+- Approval requirement
+- Audit readiness
+- Agent-specific spending policy
+
+Core endpoint:
+POST /api/budget/check
+
+This endpoint answers one question:
+Can this AI agent spend this amount for this purpose right now?
+
+Example request:
+{
+  "agent_id": "agent-demo-001",
+  "amount": 0.05,
+  "currency": "USDC",
+  "purpose": "calling a paid x402 API",
+  "daily_limit": 1.00
+}
+
+Example response (allowed):
+{
+  "allowed": true,
+  "reason": "within_daily_budget",
+  "remaining_budget": 0.95,
+  "requires_approval": false
+}
+
+Example response (denied):
+{
+  "allowed": false,
+  "reason": "daily_budget_exceeded",
+  "remaining_budget": 0.00,
+  "requires_approval": true
+}
+
+Part of AI Agent Infrastructure Safety Stack.
+AI agents are probabilistic. But payments, permissions, and audit logs require deterministic control.
+Not a wallet. Not a payment processor. A pre-payment control layer.
 
 ## Use cases
 - Pre-payment checks before paid API calls
