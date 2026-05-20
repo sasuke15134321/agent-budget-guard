@@ -1,5 +1,8 @@
 # Agent Budget Guard
 
+Check budget before an AI agent pays for an API.
+Part of Agent Control Primitives — the missing spend control layer in CDP Bazaar.
+
 A lightweight budget guard API for autonomous AI agents.
 
 Before an AI agent calls a paid API, triggers an x402 payment, or spends USDC / JPYC,
