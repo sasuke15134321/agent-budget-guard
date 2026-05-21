@@ -17,3 +17,9 @@ AI Agent -> Agent Budget Guard -> x402 Payment -> Paid API
 
 Do not use this API as a wallet or payment processor.
 This API is a pre-payment control layer.
+
+## Note
+
+This API is part of Agent Control Primitives.
+Agent Control Primitives is not a payment rail, wallet, custodian, or x402 facilitator.
+It provides lightweight safety, budget, approval, context, and audit primitives around agent actions and payments.
