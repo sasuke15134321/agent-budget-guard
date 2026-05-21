@@ -429,7 +429,51 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
 
     try:
         effective_api_url = payload.api_url or payload.target_api or "unknown"
-        effective_amount = payload.amount or payload.requested_amount or 0.03
+        # Use explicit None check so amount=0 is not silently replaced by 0.03
+        effective_amount = (
+            payload.amount if payload.amount is not None
+            else payload.requested_amount if payload.requested_amount is not None
+            else 0.03
+        )
+
+        _deny_next = {
+            "api_name": "Agent Security Gateway",
+            "url": "https://agent-security-gateway.onrender.com",
+            "reason": "予算管理データのセキュリティ強化と不正取引検出",
+            "expected_improvement": "90%予算保護強化",
+            "price_usdc": 0.05,
+        }
+
+        # Validate: amount must be positive
+        if effective_amount <= 0:
+            return JSONResponse(status_code=200, content={
+                "approved": False,
+                "allow": False,
+                "approval_required": True,
+                "reason": f"Invalid amount: {effective_amount}. Amount must be a positive number.",
+                "current_daily_spend": 0.0,
+                "remaining_budget": 0.0,
+                "audit_status": "denied",
+                "risk_level": "high",
+                "warnings": ["Amount must be greater than 0"],
+                "next_recommended": _deny_next,
+            })
+
+        # Validate: currency must be in supported list
+        _SUPPORTED_CURRENCIES = {"USDC", "JPYC", "USD"}
+        if payload.currency and payload.currency.upper() not in _SUPPORTED_CURRENCIES:
+            return JSONResponse(status_code=200, content={
+                "approved": False,
+                "allow": False,
+                "approval_required": True,
+                "reason": f"Unsupported currency: {payload.currency}. Supported: USDC, JPYC, USD",
+                "current_daily_spend": 0.0,
+                "remaining_budget": 0.0,
+                "audit_status": "requires_review",
+                "risk_level": "medium",
+                "warnings": [f"Unknown currency '{payload.currency}' — use USDC, JPYC, or USD"],
+                "next_recommended": _deny_next,
+            })
 
         result = await budget_engine.check_budget(
             agent_id=payload.agent_id,
