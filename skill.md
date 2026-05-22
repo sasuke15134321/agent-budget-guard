@@ -1,5 +1,8 @@
 # Agent Budget Guard Skill
 
+Pre-payment control API for AI agents and machine wallets.
+Use before autonomous payments via x402, USDC, or JPYC.
+
 ## Purpose
 Use Agent Budget Guard before an AI agent calls a paid API or triggers an x402 / USDC / JPYC payment.
 

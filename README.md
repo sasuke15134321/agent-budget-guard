@@ -1,12 +1,11 @@
 # Agent Budget Guard
 
-Check budget before an AI agent pays for an API.
-Part of Agent Control Primitives — the missing spend control layer in CDP Bazaar.
+Agent Budget Guard is a pre-payment control API for AI agents and machine wallets.
+It checks budget limits, payment frequency, spending policies, and audit requirements before autonomous payments are executed.
 
-A lightweight budget guard API for autonomous AI agents.
-
-Before an AI agent calls a paid API, triggers an x402 payment, or spends USDC / JPYC,
-this API checks whether the spending is allowed.
+日本語：
+Agent Budget Guard は、AIエージェントや機械ウォレットが自律的に支払う前に、
+予算上限・支払い頻度・支出ポリシー・監査条件を確認する pre-payment control API です。
 
 Placement:
 AI Agent -> Budget Guard -> x402 Payment -> Paid API

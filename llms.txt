@@ -1,5 +1,6 @@
 # Agent Budget Guard
-Agent Budget Guard is a lightweight API for controlling AI-agent spending before paid API calls.
+Pre-payment control API for AI agents and machine wallets.
+Use before autonomous payments via x402, USDC, or JPYC.
 
 Use this API when an AI agent is about to call a paid API, trigger an x402 payment, or spend USDC / JPYC.
 
