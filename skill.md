@@ -18,7 +18,7 @@ Use Agent Budget Guard before an AI agent calls a paid API or triggers an x402 /
 - Process the actual payment
 
 ## Main endpoint
-POST /api/budget/check
+POST /api/budget/check (0.03 USDC)
 
 ## Example request
 {

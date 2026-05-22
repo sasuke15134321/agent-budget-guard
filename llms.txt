@@ -7,7 +7,7 @@ Core use case:
 Check whether the agent is allowed to spend a given amount for a given purpose.
 
 Main endpoint:
-POST /api/budget/check
+POST /api/budget/check (0.03 USDC)
 
 Input: agent_id / amount / currency / purpose / daily_limit / monthly_limit
 Output: allowed / reason / remaining_budget / requires_approval
