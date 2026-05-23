@@ -548,6 +548,8 @@ MIT License - See LICENSE file for details
 
 ## Quick Test
 
+**Note**: Because x402 middleware runs before business logic, unauthenticated quick tests return 402 Payment Required for both normal and block examples. Business logic should be tested with a valid x402 payment using the internal payment test flow.
+
 ### Normal case (approved)
 ```bash
 curl -X POST https://agent-budget-guard.onrender.com/api/budget/check \
