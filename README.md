@@ -546,6 +546,49 @@ python -c "from database import budget_db; import asyncio; print(asyncio.run(bud
 
 MIT License - See LICENSE file for details
 
+## Quick Test
+
+### Normal case (approved)
+```bash
+curl -X POST https://agent-budget-guard.onrender.com/api/budget/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent_001",
+    "requested_amount": 0.01,
+    "currency": "USDC",
+    "daily_limit": 1.00
+  }'
+```
+
+Expected response:
+```json
+{
+  "approved": true,
+  "remaining_budget": 0.99,
+  "currency": "USDC"
+}
+```
+
+### Block case (budget exceeded)
+```bash
+curl -X POST https://agent-budget-guard.onrender.com/api/budget/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agent_001",
+    "requested_amount": 999.00,
+    "currency": "USDC",
+    "daily_limit": 1.00
+  }'
+```
+
+Expected response:
+```json
+{
+  "approved": false,
+  "reason": "daily_limit_exceeded"
+}
+```
+
 ## Support
 
 For issues and questions, please create an issue in the GitHub repository.

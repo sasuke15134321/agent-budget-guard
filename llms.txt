@@ -24,3 +24,5 @@ This API is a pre-payment control layer.
 This API is part of Agent Control Primitives.
 Agent Control Primitives is not a payment rail, wallet, custodian, or x402 facilitator.
 It provides lightweight safety, budget, approval, context, and audit primitives around agent actions and payments.
+
+Quick test: POST /api/budget/check with amount and daily_limit to verify pre-payment control.

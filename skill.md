@@ -39,3 +39,5 @@ POST /api/budget/check (0.03 USDC)
 
 ## Recommended flow
 AI Agent -> Budget Guard -> Security Gateway -> x402 Payment -> Paid API -> Audit Log
+
+Quick test: POST /api/budget/check with amount and daily_limit to verify pre-payment control.
