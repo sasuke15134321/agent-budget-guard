@@ -10,6 +10,8 @@ Agent Budget Guard は、AIエージェントや機械ウォレットが自律�
 Placement:
 AI Agent -> Budget Guard -> x402 Payment -> Paid API
 
+Agent Budget Guard can be used as the v0.1 budget and spending policy check component for the planned Agent Budget Guard Interceptor.
+
 What it checks:
 - Per-request spending amount
 - Daily budget limit
@@ -156,7 +158,7 @@ AIエージェントがx402 USDC / JPYC決済またはArc上のERC-8183 job fund
 ### Paid Endpoints (x402 Payment Required)
 
 ```bash
-# AI支出チェック・承認 (0.04 USDC)
+# AI支出チェック・承認 (0.03 USDC)
 curl -X POST "https://agent-budget-guard.onrender.com/api/budget/check" \
   -H "X-PAYMENT: your-payment-proof" \
   -H "Content-Type: application/json" \
