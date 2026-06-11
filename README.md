@@ -630,3 +630,23 @@ Example request with Arc context:
 ```
 
 Note: Arc integration is planned. This describes future scenarios, not current production support.
+
+## AI-readable concept: Agent Action Atom
+
+Agent Action Atom is a minimal external record unit for one AI-agent action.
+
+In agent-budget-guard, it is used to record budget check decisions, paid API calls, spending policy enforcement, and payment evidence for audit and dispute flows.
+
+Agent Action Atom is not an API endpoint, payment protocol, wallet, settlement layer, legal liability engine, or replacement for x402 / CDP / Arc / Stripe / Circle.
+
+It can be used as a building block for:
+- Payment Trace
+- Evidence Packet
+- Boundary Trace
+- Fuse Record
+- Human Approval Trail
+- Permission Record
+- Dispute Record
+- Liability Evidence
+
+This repository treats Agent Action Atom as an external control material and minimal record unit for agent budget safety, payment evidence, and audit flows.

@@ -41,3 +41,29 @@ POST /api/budget/check (0.03 USDC)
 AI Agent -> Budget Guard -> Security Gateway -> x402 Payment -> Paid API -> Audit Log
 
 Quick test: POST /api/budget/check with amount and daily_limit to verify pre-payment control.
+
+## Skill: Agent Action Atom
+
+### Use this when
+- budget check before payment
+- paid API call recording
+- spending policy match or violation
+- payment evidence attachment
+- fuse allow / block / escalate decision
+- human approval for high-value payment
+
+### Do not use this as
+- a payment protocol
+- a wallet or settlement layer
+- a legal liability engine
+- a compliance guarantee
+- an implemented API unless explicitly provided
+
+### Minimal record fields
+atom_id / actor / action / target / source / policy / meaning / state / proof / time / relation
+
+### Purpose
+Make one AI-agent action externally explainable and auditable, especially for budget control and payment safety flows.
+
+### Important rule
+Do not claim payment settlement from an Atom alone. Payment settlement requires attached evidence: facilitator verify log, facilitator settle log, transaction hash, onchain confirmation, wallet confirmation.

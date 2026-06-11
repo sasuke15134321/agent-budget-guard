@@ -26,3 +26,25 @@ Agent Control Primitives is not a payment rail, wallet, custodian, or x402 facil
 It provides lightweight safety, budget, approval, context, and audit primitives around agent actions and payments.
 
 Quick test: POST /api/budget/check with amount and daily_limit to verify pre-payment control.
+
+## Agent Action Atom
+
+Agent Action Atom is a minimal external record unit for one AI-agent action.
+
+In the context of agent-budget-guard, use it to record budget check decisions, paid API calls, spending policy matches, payment evidence attachment, and approval or block outcomes.
+
+Agent Action Atom is not a payment protocol, wallet, settlement layer, legal liability engine, or API endpoint by itself.
+
+Agent Action Atoms can be grouped into higher-level external control materials:
+- Payment Trace
+- Evidence Packet
+- Boundary Trace
+- Fuse Record
+- Human Approval Trail
+- Permission Record
+- Dispute Record
+- Liability Evidence
+
+Do not treat an Agent Action Atom as proof of payment settlement unless payment evidence is attached, such as facilitator logs, transaction hash, onchain confirmation, wallet confirmation, service logs, and endpoint attribution.
+
+Current status: private design concept, external control material, minimal record unit, not an API, not a protocol, not a standard.
