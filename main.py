@@ -949,6 +949,13 @@ async def build_spending_policy(req: SpendingPolicyBuildRequest):
 async def agent_json():
     return {
         "name": "Agent Budget Guard",
+        "external_control_materials_map": {
+            "name": "External Control Materials Map v0.2",
+            "url": "https://ai-agent-payment-safety-stack.onrender.com/.well-known/external-control-materials.json",
+            "purpose": "AI-readable map showing how memory provenance, tool permission, observability boundaries, command execution gates, spending policy, budget checks, payment records, evidence packets, and payment evidence checks fit together.",
+            "version": "0.2"
+        },
+        "role_in_flow": ["Step 5: Spending Policy", "Step 6: Budget Check"],
         "capabilities": [
             {
                 "name": "Budget Check",

@@ -119,3 +119,10 @@ Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Ev
 - a wallet
 - a legal compliance system
 - an official standard
+
+## Related External Control Materials Map
+
+Use the central External Control Materials Map when an AI agent needs to understand how this service fits into a broader AI-agent control flow.
+
+Map:
+https://ai-agent-payment-safety-stack.onrender.com/.well-known/external-control-materials.json

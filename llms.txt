@@ -78,3 +78,12 @@ The builder is free because it creates the policy structure only.
 Actual checks and paid decisions remain handled by paid x402 endpoints such as Budget Check.
 
 Not a model provider, not a memory store, not a payment protocol, not a wallet, not a settlement layer, not a legal compliance system, not an official standard.
+
+## External Control Materials Map
+
+This service is part of a broader External Control Materials flow for AI agents.
+
+Central AI-readable map:
+https://ai-agent-payment-safety-stack.onrender.com/.well-known/external-control-materials.json
+
+This service corresponds to Step 5: Spending Policy and Step 6: Budget Check in the External Control Materials Map.
