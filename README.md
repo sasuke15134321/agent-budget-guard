@@ -666,3 +666,23 @@ Pricing: free
 Type: experimental, stateless
 
 It is not a payment protocol, settlement layer, wallet, legal compliance system, or official standard.
+
+## Agent Spending Policy Builder — Reasoning Cost & Memory Boundary Extension
+
+Agent Spending Policy Builder now supports reasoning cost and memory boundary fields.
+
+It can define:
+- spending limits
+- approval rules
+- token budget
+- memory scope policy
+- reasoning cost boundary
+- human review triggers
+
+This is designed for AI agents that need external policy material before spending tokens, reading memory, comparing paid APIs, or making payment decisions.
+
+The builder is free because it creates the policy structure only.
+
+Actual checks and paid decisions remain handled by paid x402 endpoints such as Budget Check.
+
+This is not a model provider, not a memory store, not a payment protocol, not a wallet, not a settlement layer, not a legal compliance system, and not an official standard.

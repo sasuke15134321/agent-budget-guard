@@ -90,3 +90,32 @@ Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Ev
 - a wallet
 - a legal compliance system
 - an official standard
+
+## Skill: Agent Spending Policy Builder — Reasoning Cost & Memory Boundary Extension
+
+Agent Spending Policy Builder now supports reasoning cost and memory boundary fields.
+
+### It can define
+- spending limits
+- approval rules
+- token budget
+- memory scope policy
+- reasoning cost boundary
+- human review triggers
+
+### Use this when
+- an AI agent needs token budget limits before reasoning or comparing tools
+- an AI agent needs memory scope boundaries before using project memory
+- a system needs a policy that can feed into Budget Check, Agent Action Atom, Payment Action Record, and Evidence Packet workflows
+
+### Can feed into
+Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Evidence Packet, Decision Cost Trace, Memory Provenance Graph, Token Placement Governance
+
+### Do not use this as
+- a model provider
+- a memory store
+- a payment protocol
+- a settlement layer
+- a wallet
+- a legal compliance system
+- an official standard

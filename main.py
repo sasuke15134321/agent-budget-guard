@@ -303,6 +303,30 @@ class SpendingPolicyContextStateInput(BaseModel):
     evidence: Optional[str] = Field(default="none")
     last_checked: Optional[str] = Field(default=None)
 
+class SpendingPolicyTokenBudgetInput(BaseModel):
+    max_tokens_per_decision: Optional[int] = Field(default=8000)
+    max_tokens_per_paid_api_selection: Optional[int] = Field(default=3000)
+    max_tokens_before_human_review: Optional[int] = Field(default=12000)
+    allow_extra_reasoning_if_payment_required: Optional[bool] = Field(default=False)
+
+class SpendingPolicyMemoryScopeInput(BaseModel):
+    allowed_memory_scopes: Optional[List[str]] = Field(default=["current_task", "confirmed_project_status", "source_of_truth_files"])
+    blocked_memory_scopes: Optional[List[str]] = Field(default=["stale_conversation", "unverified_assumption", "sensitive_memory"])
+    require_freshness_check: Optional[bool] = Field(default=True)
+    require_source_of_truth_before_payment: Optional[bool] = Field(default=True)
+
+class SpendingPolicyReasoningCostInput(BaseModel):
+    max_retries_before_review: Optional[int] = Field(default=2)
+    max_tool_comparisons: Optional[int] = Field(default=3)
+    require_cost_trace: Optional[bool] = Field(default=True)
+    block_if_context_state_unknown: Optional[bool] = Field(default=True)
+
+class SpendingPolicyHumanReviewTriggersInput(BaseModel):
+    trigger_if_token_budget_exceeded: Optional[bool] = Field(default=True)
+    trigger_if_memory_scope_uncertain: Optional[bool] = Field(default=True)
+    trigger_if_payment_and_memory_conflict: Optional[bool] = Field(default=True)
+    trigger_if_source_of_truth_missing: Optional[bool] = Field(default=True)
+
 class SpendingPolicyBuildRequest(BaseModel):
     agent_id: str
     policy_name: Optional[str] = Field(default=None)
@@ -310,6 +334,10 @@ class SpendingPolicyBuildRequest(BaseModel):
     allowed_services: Optional[List[str]] = Field(default=None)
     approval_rules: Optional[SpendingPolicyApprovalRulesInput] = Field(default=None)
     context_state: Optional[SpendingPolicyContextStateInput] = Field(default=None)
+    token_budget: Optional[SpendingPolicyTokenBudgetInput] = Field(default=None)
+    memory_scope_policy: Optional[SpendingPolicyMemoryScopeInput] = Field(default=None)
+    reasoning_cost_boundary: Optional[SpendingPolicyReasoningCostInput] = Field(default=None)
+    human_review_triggers: Optional[SpendingPolicyHumanReviewTriggersInput] = Field(default=None)
 
 # AI agent policy endpoint
 @app.get("/.well-known/ai-agent-policy", include_in_schema=False)
@@ -859,6 +887,10 @@ async def build_spending_policy(req: SpendingPolicyBuildRequest):
     limits = req.limits or SpendingPolicyLimitsInput()
     approval_rules = req.approval_rules or SpendingPolicyApprovalRulesInput()
     context_state = req.context_state or SpendingPolicyContextStateInput()
+    token_budget = req.token_budget or SpendingPolicyTokenBudgetInput()
+    memory_scope_policy = req.memory_scope_policy or SpendingPolicyMemoryScopeInput()
+    reasoning_cost_boundary = req.reasoning_cost_boundary or SpendingPolicyReasoningCostInput()
+    human_review_triggers = req.human_review_triggers or SpendingPolicyHumanReviewTriggersInput()
 
     return {
         "policy_id": policy_id,
@@ -873,21 +905,38 @@ async def build_spending_policy(req: SpendingPolicyBuildRequest):
         "allowed_services": req.allowed_services or [],
         "approval_rules": approval_rules.model_dump(),
         "context_state": context_state.model_dump(),
+        "token_budget": token_budget.model_dump(),
+        "memory_scope_policy": memory_scope_policy.model_dump(),
+        "reasoning_cost_boundary": reasoning_cost_boundary.model_dump(),
+        "human_review_triggers": human_review_triggers.model_dump(),
         "agent_action_atom": {
             "atom_type": "spending_policy_created",
             "action_type": "policy_build",
             "target": "agent_spending_policy",
             "audit_ready": True,
+            "includes": [
+                "spending_limits",
+                "approval_rules",
+                "token_budget",
+                "memory_scope_policy",
+                "reasoning_cost_boundary",
+                "human_review_triggers"
+            ],
             "note": "Atom-compatible reference. This builder does not call the external Action Atom Builder."
         },
         "can_feed_into": [
             "Budget Check",
             "Agent Action Atom",
             "Agent Payment Action Record",
-            "Payment Control Evidence Packet"
+            "Payment Control Evidence Packet",
+            "Decision Cost Trace",
+            "Memory Provenance Graph",
+            "Token Placement Governance"
         ],
         "created_at": created_at,
         "non_goals": [
+            "not a model provider",
+            "not a memory store",
             "not a payment protocol",
             "not a settlement layer",
             "not a wallet",
@@ -915,19 +964,26 @@ async def agent_json():
                 "type": "experimental_stateless_builder",
                 "pricing": "free",
                 "x402_required": False,
-                "purpose": "Creates a structured AI-agent spending policy with limits, allowed currencies, allowed services, approval rules, context state, and Atom-compatible reference.",
+                "purpose": "Creates a structured AI-agent spending policy with spending limits, approval rules, token budget, memory scope policy, reasoning cost boundary, human review triggers, context state, and Atom-compatible reference.",
                 "use_when": [
                     "an AI agent needs spending rules before calling paid APIs",
-                    "a developer needs to define budget limits for AI-agent spending",
-                    "a system needs a policy that can feed into Budget Check and payment evidence workflows"
+                    "an AI agent needs token budget limits before reasoning or comparing tools",
+                    "an AI agent needs memory scope boundaries before using project memory",
+                    "a developer needs external policy material for AI-agent cost and payment control",
+                    "a system needs a policy that can feed into Budget Check, Agent Action Atom, Payment Action Record, and Evidence Packet workflows"
                 ],
                 "can_feed_into": [
                     "Budget Check",
                     "Agent Action Atom",
                     "Agent Payment Action Record",
-                    "Payment Control Evidence Packet"
+                    "Payment Control Evidence Packet",
+                    "Decision Cost Trace",
+                    "Memory Provenance Graph",
+                    "Token Placement Governance"
                 ],
                 "non_goals": [
+                    "not a model provider",
+                    "not a memory store",
                     "not a payment protocol",
                     "not a settlement layer",
                     "not a wallet",

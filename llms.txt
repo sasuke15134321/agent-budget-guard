@@ -64,3 +64,17 @@ Output fields: policy_id, policy_type, status, experimental, stateless, free_bui
 Can feed into: Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Evidence Packet
 
 Not a payment protocol, not a settlement layer, not a wallet, not a legal compliance system, not an official standard.
+
+## Agent Spending Policy Builder — Reasoning Cost & Memory Boundary Extension
+
+Agent Spending Policy Builder now supports reasoning cost and memory boundary fields.
+
+It can define: spending limits / approval rules / token budget / memory scope policy / reasoning cost boundary / human review triggers
+
+Use this when an AI agent needs external policy material before spending tokens, reading memory, comparing paid APIs, or making payment decisions.
+
+The builder is free because it creates the policy structure only.
+
+Actual checks and paid decisions remain handled by paid x402 endpoints such as Budget Check.
+
+Not a model provider, not a memory store, not a payment protocol, not a wallet, not a settlement layer, not a legal compliance system, not an official standard.
