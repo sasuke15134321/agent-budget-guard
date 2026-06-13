@@ -650,3 +650,19 @@ It can be used as a building block for:
 - Liability Evidence
 
 This repository treats Agent Action Atom as an external control material and minimal record unit for agent budget safety, payment evidence, and audit flows.
+
+## Agent Spending Policy Builder
+
+Agent Spending Policy Builder is a free experimental stateless builder that creates an AI-agent spending policy before budget checks are executed.
+
+It defines spending limits, allowed currencies, allowed services, and approval rules.
+
+This builder is free because it only creates the policy structure. Actual budget checks, transaction records, and budget reports remain paid x402 endpoints.
+
+The policy can feed into Budget Check, Agent Action Atom, Agent Payment Action Record, and Payment Control Evidence Packet workflows.
+
+Endpoint: POST /api/spending-policy/build
+Pricing: free
+Type: experimental, stateless
+
+It is not a payment protocol, settlement layer, wallet, legal compliance system, or official standard.

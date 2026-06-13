@@ -48,3 +48,19 @@ Agent Action Atoms can be grouped into higher-level external control materials:
 Do not treat an Agent Action Atom as proof of payment settlement unless payment evidence is attached, such as facilitator logs, transaction hash, onchain confirmation, wallet confirmation, service logs, and endpoint attribution.
 
 Current status: private design concept, external control material, minimal record unit, not an API, not a protocol, not a standard.
+
+## Agent Spending Policy Builder
+
+Agent Spending Policy Builder is a free experimental stateless builder that creates an AI-agent spending policy before budget checks are executed.
+
+Endpoint: POST /api/spending-policy/build
+Pricing: free
+x402_required: false
+
+Use this when an AI agent needs spending rules before calling paid APIs, or a system needs a policy that can feed into Budget Check and payment evidence workflows.
+
+Output fields: policy_id, policy_type, status, experimental, stateless, free_builder, limits, allowed_services, approval_rules, context_state, agent_action_atom, can_feed_into, created_at, non_goals
+
+Can feed into: Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Evidence Packet
+
+Not a payment protocol, not a settlement layer, not a wallet, not a legal compliance system, not an official standard.

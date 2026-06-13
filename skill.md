@@ -67,3 +67,26 @@ Make one AI-agent action externally explainable and auditable, especially for bu
 
 ### Important rule
 Do not claim payment settlement from an Atom alone. Payment settlement requires attached evidence: facilitator verify log, facilitator settle log, transaction hash, onchain confirmation, wallet confirmation.
+
+## Skill: Agent Spending Policy Builder
+
+### Use this when
+- an AI agent needs spending rules before calling paid APIs
+- a developer needs to define budget limits for AI-agent spending
+- a system needs a policy that can feed into Budget Check and payment evidence workflows
+
+### Endpoint
+POST /api/spending-policy/build (free, no x402 required)
+
+### Output
+policy_id / experimental: true / stateless: true / free_builder: true / limits / approval_rules / context_state / agent_action_atom / can_feed_into / non_goals
+
+### Can feed into
+Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Evidence Packet
+
+### Do not use this as
+- a payment protocol
+- a settlement layer
+- a wallet
+- a legal compliance system
+- an official standard

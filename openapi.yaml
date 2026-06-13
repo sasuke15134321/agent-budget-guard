@@ -319,6 +319,88 @@ paths:
                 invoice_required_count: 0
                 note: "Summary feature coming soon. Tx recording via /api/record-payment."
 
+  /api/spending-policy/build:
+    post:
+      operationId: build_spending_policy
+      summary: Agent Spending Policy Builder (free, stateless, experimental)
+      description: >
+        Creates a structured AI-agent spending policy with limits, allowed currencies,
+        allowed services, approval rules, context state, and Atom-compatible reference.
+        Free builder — no x402 payment required. No DB storage. Stateless.
+      tags: [Policy]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id]
+              properties:
+                agent_id:
+                  type: string
+                policy_name:
+                  type: string
+                limits:
+                  type: object
+                allowed_services:
+                  type: array
+                  items:
+                    type: string
+                approval_rules:
+                  type: object
+                context_state:
+                  type: object
+            example:
+              agent_id: "agent-001"
+              policy_name: "my-spending-policy"
+              limits:
+                max_amount_per_payment: "0.10"
+                daily_budget: "1.00"
+                monthly_budget: "10.00"
+                allowed_currencies: ["USDC"]
+              allowed_services: ["agent-security-gateway.onrender.com"]
+              approval_rules:
+                human_approval_required_above: "0.50"
+                block_unknown_counterparty: true
+                require_payment_evidence: true
+                require_budget_check: true
+              context_state:
+                status: "active"
+                use_rule: "enforce"
+                evidence: "none"
+                last_checked: null
+      responses:
+        '200':
+          description: Spending policy created
+          content:
+            application/json:
+              example:
+                policy_id: "spending_policy_<uuid>"
+                policy_type: "agent_spending_policy"
+                status: "created"
+                experimental: true
+                stateless: true
+                free_builder: true
+                agent_id: "agent-001"
+                policy_name: "my-spending-policy"
+                agent_action_atom:
+                  atom_type: "spending_policy_created"
+                  action_type: "policy_build"
+                  target: "agent_spending_policy"
+                  audit_ready: true
+                  note: "Atom-compatible reference. This builder does not call the external Action Atom Builder."
+                can_feed_into:
+                  - "Budget Check"
+                  - "Agent Action Atom"
+                  - "Agent Payment Action Record"
+                  - "Payment Control Evidence Packet"
+                non_goals:
+                  - "not a payment protocol"
+                  - "not a settlement layer"
+                  - "not a wallet"
+                  - "not a legal compliance system"
+                  - "not an official standard"
+
   /.well-known/x402.json:
     get:
       summary: x402 endpoint discovery

@@ -16,6 +16,7 @@ import base64
 from datetime import datetime
 import asyncio
 import traceback
+import uuid
 from fastapi.openapi.utils import get_openapi
 
 from payment_verifier import PaymentVerifier
@@ -282,6 +283,33 @@ class AgentReportResponse(BaseModel):
     budget_utilization: float
     risk_assessment: str
     next_recommended: NextRecommendation
+
+# --- Spending Policy Builder models ---
+class SpendingPolicyLimitsInput(BaseModel):
+    max_amount_per_payment: Optional[str] = Field(default="0.10")
+    daily_budget: Optional[str] = Field(default="1.00")
+    monthly_budget: Optional[str] = Field(default="10.00")
+    allowed_currencies: Optional[List[str]] = Field(default=["USDC"])
+
+class SpendingPolicyApprovalRulesInput(BaseModel):
+    human_approval_required_above: Optional[str] = Field(default="0.50")
+    block_unknown_counterparty: Optional[bool] = Field(default=True)
+    require_payment_evidence: Optional[bool] = Field(default=True)
+    require_budget_check: Optional[bool] = Field(default=True)
+
+class SpendingPolicyContextStateInput(BaseModel):
+    status: Optional[str] = Field(default="active")
+    use_rule: Optional[str] = Field(default="enforce")
+    evidence: Optional[str] = Field(default="none")
+    last_checked: Optional[str] = Field(default=None)
+
+class SpendingPolicyBuildRequest(BaseModel):
+    agent_id: str
+    policy_name: Optional[str] = Field(default=None)
+    limits: Optional[SpendingPolicyLimitsInput] = Field(default=None)
+    allowed_services: Optional[List[str]] = Field(default=None)
+    approval_rules: Optional[SpendingPolicyApprovalRulesInput] = Field(default=None)
+    context_state: Optional[SpendingPolicyContextStateInput] = Field(default=None)
 
 # AI agent policy endpoint
 @app.get("/.well-known/ai-agent-policy", include_in_schema=False)
@@ -657,13 +685,15 @@ async def root():
             "record_transaction": "/api/budget/record",
             "agent_report": "/api/budget/report/{agent_id}",
             "budget_stats": "/api/budget/stats",
+            "spending_policy_build": "/api/spending-policy/build",
             "health": "/health",
             "discovery": "/.well-known/x402.json"
         },
         "pricing": {
             "budget_check": f"{PRICE_USDC} USDC",
             "record_transaction": "0.01 USDC",
-            "agent_report": "0.05 USDC"
+            "agent_report": "0.05 USDC",
+            "spending_policy_build": "free"
         },
         "network": NETWORK,
         "currency": "USDC",
@@ -818,6 +848,94 @@ async def mcp_server_card():
         ],
         "resources": [],
         "prompts": []
+    }
+
+@app.post("/api/spending-policy/build", include_in_schema=True)
+async def build_spending_policy(req: SpendingPolicyBuildRequest):
+    """Build an AI-agent spending policy. Free, stateless, experimental."""
+    policy_id = f"spending_policy_{uuid.uuid4()}"
+    created_at = datetime.utcnow().isoformat() + "Z"
+
+    limits = req.limits or SpendingPolicyLimitsInput()
+    approval_rules = req.approval_rules or SpendingPolicyApprovalRulesInput()
+    context_state = req.context_state or SpendingPolicyContextStateInput()
+
+    return {
+        "policy_id": policy_id,
+        "policy_type": "agent_spending_policy",
+        "status": "created",
+        "experimental": True,
+        "stateless": True,
+        "free_builder": True,
+        "agent_id": req.agent_id,
+        "policy_name": req.policy_name or f"policy_{req.agent_id}",
+        "limits": limits.model_dump(),
+        "allowed_services": req.allowed_services or [],
+        "approval_rules": approval_rules.model_dump(),
+        "context_state": context_state.model_dump(),
+        "agent_action_atom": {
+            "atom_type": "spending_policy_created",
+            "action_type": "policy_build",
+            "target": "agent_spending_policy",
+            "audit_ready": True,
+            "note": "Atom-compatible reference. This builder does not call the external Action Atom Builder."
+        },
+        "can_feed_into": [
+            "Budget Check",
+            "Agent Action Atom",
+            "Agent Payment Action Record",
+            "Payment Control Evidence Packet"
+        ],
+        "created_at": created_at,
+        "non_goals": [
+            "not a payment protocol",
+            "not a settlement layer",
+            "not a wallet",
+            "not a legal compliance system",
+            "not an official standard"
+        ]
+    }
+
+@app.get("/.well-known/agent.json", include_in_schema=False)
+async def agent_json():
+    return {
+        "name": "Agent Budget Guard",
+        "capabilities": [
+            {
+                "name": "Budget Check",
+                "endpoint": "POST /api/budget/check",
+                "type": "paid",
+                "pricing": "0.03 USDC",
+                "x402_required": True,
+                "purpose": "Check budget limits before autonomous payments"
+            },
+            {
+                "name": "Agent Spending Policy Builder",
+                "endpoint": "POST /api/spending-policy/build",
+                "type": "experimental_stateless_builder",
+                "pricing": "free",
+                "x402_required": False,
+                "purpose": "Creates a structured AI-agent spending policy with limits, allowed currencies, allowed services, approval rules, context state, and Atom-compatible reference.",
+                "use_when": [
+                    "an AI agent needs spending rules before calling paid APIs",
+                    "a developer needs to define budget limits for AI-agent spending",
+                    "a system needs a policy that can feed into Budget Check and payment evidence workflows"
+                ],
+                "can_feed_into": [
+                    "Budget Check",
+                    "Agent Action Atom",
+                    "Agent Payment Action Record",
+                    "Payment Control Evidence Packet"
+                ],
+                "non_goals": [
+                    "not a payment protocol",
+                    "not a settlement layer",
+                    "not a wallet",
+                    "not a legal compliance system",
+                    "not an official standard"
+                ]
+            }
+        ]
     }
 
 if __name__ == "__main__":
