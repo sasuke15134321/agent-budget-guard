@@ -120,9 +120,29 @@ Budget Check, Agent Action Atom, Agent Payment Action Record, Payment Control Ev
 - a legal compliance system
 - an official standard
 
-## Related External Control Materials Map
+---
 
-Use the central External Control Materials Map when an AI agent needs to understand how this service fits into a broader AI-agent control flow.
+## Related External Control Materials
 
-Map:
+This service is part of the External Control Materials flow for AI-agent spending, payment decisions, and evidence workflows.
+
+Central AI-readable map:
 https://ai-agent-payment-safety-stack.onrender.com/.well-known/external-control-materials.json
+
+OKF-style markdown bundle:
+https://ai-agent-payment-safety-stack.onrender.com/okf/index.md
+
+Flow: Tool Approval → Spending Policy → Payment Review → Budget Check → Evidence
+
+Related materials in the flow:
+- Search Result Trust Check (Step 2 - trust gate)
+- Tool Permission Policy (Step 3)
+- Tool Approval Check (Step 4 - execution gate)
+- Observability Data Boundary (Step 5)
+- Command Execution Gate (Step 6)
+- Agent Spending Policy (Step 7)
+- Payment Review (Step 8 - payment gate)
+- Budget Check (Step 9)
+- Agent Payment Action Record (Step 10)
+- Payment Control Evidence Packet (Step 11)
+- Payment Evidence Check (Step 12)

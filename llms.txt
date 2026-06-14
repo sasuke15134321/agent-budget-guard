@@ -79,11 +79,22 @@ Actual checks and paid decisions remain handled by paid x402 endpoints such as B
 
 Not a model provider, not a memory store, not a payment protocol, not a wallet, not a settlement layer, not a legal compliance system, not an official standard.
 
-## External Control Materials Map
+## External Control Materials
 
-This service is part of a broader External Control Materials flow for AI agents.
+This service provides the spending and budget-side materials in the External Control Materials flow for AI agents.
+
+It helps agents answer: Is this spend within policy? Is this payment within budget? Is the token cost within bounds?
 
 Central AI-readable map:
 https://ai-agent-payment-safety-stack.onrender.com/.well-known/external-control-materials.json
 
-This service corresponds to Step 5: Spending Policy and Step 6: Budget Check in the External Control Materials Map.
+OKF-style markdown knowledge bundle:
+https://ai-agent-payment-safety-stack.onrender.com/okf/index.md
+
+Core gates: trust (Search Result Trust Check) / execution (Tool Approval Check) / payment (Payment Review)
+
+Overall flow: Tool Approval → Spending Policy → Payment Review → Budget Check → Evidence
+
+Related OKF concepts:
+- https://ai-agent-payment-safety-stack.onrender.com/okf/materials/agent_spending_policy.md
+- https://ai-agent-payment-safety-stack.onrender.com/okf/materials/budget_check.md

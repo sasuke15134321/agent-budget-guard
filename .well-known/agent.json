@@ -1,0 +1,44 @@
+{
+  "name": "Agent Budget Guard",
+  "type": "spending_budget_control",
+  "external_control_materials_map": {
+    "name": "External Control Materials Map v0.4",
+    "url": "https://ai-agent-payment-safety-stack.onrender.com/.well-known/external-control-materials.json",
+    "purpose": "AI-readable map showing how memory provenance, search result trust, tool permission, command execution, spending policy, budget checks, payment records, evidence packets, and payment evidence checks fit together.",
+    "version": "0.4"
+  },
+  "okf_style_bundle": {
+    "name": "External Control Materials Bundle v0.2",
+    "url": "https://ai-agent-payment-safety-stack.onrender.com/okf/index.md",
+    "purpose": "OKF-compatible Markdown documentation of 12 external control materials.",
+    "version": "0.2"
+  },
+  "role_in_flow": ["Agent Spending Policy (Step 7)", "Payment Review (Step 8 - payment gate)", "Budget Check (Step 9)"],
+  "purpose": "Provides spending policy definition and budget verification for AI agents before payments.",
+  "live_url": "https://agent-budget-guard.onrender.com",
+  "core_gates": ["payment"],
+  "use_when": [
+    "an AI agent is about to call a paid API",
+    "an AI agent is about to trigger an x402 payment",
+    "a system needs to verify spending is within budget limits",
+    "a developer needs to enforce spending policies",
+    "token budget or memory boundary constraints must be checked"
+  ],
+  "capabilities": [
+    "spending policy building",
+    "budget verification",
+    "token budget tracking",
+    "memory scope policy enforcement",
+    "reasoning cost boundaries",
+    "human review triggers",
+    "payment pre-approval"
+  ],
+  "non_goals": [
+    "not a payment protocol",
+    "not a wallet",
+    "not a settlement layer",
+    "not a payment processor",
+    "not a legal compliance system",
+    "not an official standard"
+  ]
+}
