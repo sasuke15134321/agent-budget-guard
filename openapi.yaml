@@ -8,6 +8,7 @@ info:
     anomaly detection, and USDC/JPYC spending caps.
     Essential for Japanese enterprise AI agent deployments.
     Prevents runaway spending and unauthorized payments.
+    Also supports duplicate lookup prevention and market data budget control for AI agents using paid data APIs.
   x-guidance: "Use this API before every x402 USDC or JPYC payment. L4 budget control, Japan invoice compliance."
 servers:
   - url: https://agent-budget-guard.onrender.com

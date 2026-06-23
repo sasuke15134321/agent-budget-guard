@@ -98,3 +98,7 @@ Overall flow: Tool Approval → Spending Policy → Payment Review → Budget Ch
 Related OKF concepts:
 - https://ai-agent-payment-safety-stack.onrender.com/okf/materials/agent_spending_policy.md
 - https://ai-agent-payment-safety-stack.onrender.com/okf/materials/budget_check.md
+
+## Priority 0.5: Paid Data Lookup Governance
+
+Use this to prevent overspending, repeated paid lookups, and duplicate x402 calls by AI agents. Supports provider budget, cache window, and lookup frequency limits for paid data API governance.

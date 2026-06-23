@@ -338,6 +338,11 @@ class SpendingPolicyBuildRequest(BaseModel):
     memory_scope_policy: Optional[SpendingPolicyMemoryScopeInput] = Field(default=None)
     reasoning_cost_boundary: Optional[SpendingPolicyReasoningCostInput] = Field(default=None)
     human_review_triggers: Optional[SpendingPolicyHumanReviewTriggersInput] = Field(default=None)
+    # Priority 0.5: paid data lookup governance schema candidates
+    duplicate_lookup_risk: Optional[str] = Field(default=None, description="Risk level for duplicate paid data lookups (e.g. low, medium, high)")
+    cache_window_seconds: Optional[int] = Field(default=None, description="Cache window in seconds to prevent duplicate paid data API calls")
+    lookup_frequency_limit: Optional[str] = Field(default=None, description="Max lookup frequency (e.g. once_per_minute, once_per_hour)")
+    provider_budget: Optional[str] = Field(default=None, description="Budget cap for a specific paid data provider (e.g. CoinGecko, CoinMarketCap)")
 
 # AI agent policy endpoint
 @app.get("/.well-known/ai-agent-policy", include_in_schema=False)
