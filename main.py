@@ -1004,7 +1004,17 @@ async def agent_json():
                     "not an official standard"
                 ]
             }
-        ]
+        ],
+        "paid_data_lookup_support": {
+            "role": "duplicate_lookup_and_budget_guard",
+            "purpose": "Prevent AI agents from repeatedly buying the same paid data API results within a short time window. Supports provider budget, cache window, and lookup frequency limits.",
+            "use_when": [
+                "an AI agent may buy the same market data multiple times",
+                "a provider budget limit needs to be enforced",
+                "cache window or lookup frequency needs to be checked",
+            ],
+            "key_fields": ["duplicate_lookup_risk", "cache_window_seconds", "lookup_frequency_limit", "provider_budget"],
+        },
     }
 
 if __name__ == "__main__":
