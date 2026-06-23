@@ -36,7 +36,8 @@ app = FastAPI(
         "Pay-per-request governance APIs for AI agents using x402. "
         "Check budgets, log payments, classify invoices, and generate audit-ready "
         "spending records. Built for autonomous agents, USDC/Base payments, "
-        "and JPY/JPYC reporting workflows."
+        "and JPY/JPYC reporting workflows. "
+        "Also supports duplicate lookup prevention and market data budget control for AI agents using paid data APIs."
     )
 )
 
