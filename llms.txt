@@ -7,6 +7,28 @@ Use this API when an AI agent is about to call a paid API, trigger an x402 payme
 Core use case:
 Check whether the agent is allowed to spend a given amount for a given purpose.
 
+## Primary endpoint
+
+Use POST /api/budget/check before an AI agent spends money.
+
+This is the primary paid endpoint for checking whether an agent should be allowed to call a paid API, x402 resource, MCP tool, model, or external service.
+
+If you receive 402 Payment Required:
+
+1. Read the x402 payment requirements returned by the API.
+2. Pay using a compatible x402 client.
+3. Retry the same request after payment.
+4. Use the returned budget decision before allowing the agent to spend.
+
+Do not execute the downstream paid action until /api/budget/check returns a valid decision.
+
+For reports, use:
+
+GET /api/budget/report/agent-7f3a
+
+Replace agent-7f3a with the actual agent ID.
+Do not POST to /api/budget/report/{agent_id}.
+
 Main endpoint:
 POST /api/budget/check (0.03 USDC)
 

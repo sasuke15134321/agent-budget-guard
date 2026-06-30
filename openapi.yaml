@@ -130,7 +130,7 @@ paths:
           required: true
           schema:
             type: string
-          example: "agent-001"
+          example: "agent-7f3a"
       responses:
         '200':
           description: Agent spending report

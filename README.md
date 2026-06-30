@@ -10,6 +10,25 @@ Agent Budget Guard は、AIエージェントや機械ウォレットが自律�
 Placement:
 AI Agent -> Budget Guard -> x402 Payment -> Paid API
 
+## Primary buyer flow
+
+Use /api/budget/check before an AI agent spends money.
+
+This endpoint checks whether an agent should be allowed to call a paid API, x402 resource, MCP tool, model, or external service.
+
+Primary endpoint:
+
+POST /api/budget/check
+
+If the API returns 402 Payment Required:
+
+1. Read the x402 payment requirements returned by the API.
+2. Pay using a compatible x402 client.
+3. Retry the same request after payment.
+4. Use the returned budget decision before allowing the agent to spend.
+
+Do not execute the downstream paid action until /api/budget/check returns a valid decision.
+
 Agent Budget Guard can be used as the v0.1 budget and spending policy check component for the planned Agent Budget Guard Interceptor.
 
 What it checks:
@@ -356,6 +375,16 @@ Response:
 ```
 
 ### Agent Report
+
+Use GET for /api/budget/report/{agent_id}.
+Replace {agent_id} with the actual agent ID.
+
+Example:
+
+GET /api/budget/report/agent-7f3a
+
+Do not POST to /api/budget/report/{agent_id}.
+
 ```bash
 curl -X GET "http://localhost:8000/api/budget/report/agent-001" \
   -H "X-PAYMENT: {payment_data}"
