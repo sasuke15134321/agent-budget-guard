@@ -351,6 +351,15 @@ Response:
 }
 ```
 
+Payment success confirmed:
+- verify status=200 isValid=True
+- settle status=200 success=True
+- Amount: 0.03 USDC
+- tx: 0x4d062557e2022cd7b6d0b3ab454c6cd70bb9eb47628ae5d18819b3689325327e
+- Timestamp: 2026-07-01
+- Endpoint: POST /api/budget/check 200 OK
+- Settled via CDP Facilitator on Base mainnet（eip155:8453）
+
 ### Record Transaction
 ```bash
 curl -X POST "http://localhost:8000/api/budget/record" \
