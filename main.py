@@ -146,6 +146,8 @@ _BAZAAR_EXTENSIONS = {
 @app.middleware("http")
 async def x402_payment_middleware(request: Request, call_next):
     """Pydantic バリデーションより先に支払いヘッダーをチェックする"""
+    request.state.request_id = uuid.uuid4().hex
+    request.state.requested_at = datetime.utcnow().isoformat() + "Z"
     method = request.method
     path = request.url.path
 
@@ -466,6 +468,10 @@ async def x402_discovery_manifest():
 )
 async def check_budget(payload: BudgetCheckRequest, request: Request):
     """Check budget and approve/deny spending with x402 payment verification"""
+    request_id = getattr(request.state, "request_id", uuid.uuid4().hex)
+    requested_at = getattr(request.state, "requested_at", datetime.utcnow().isoformat() + "Z")
+    payment_completed_at: Optional[str] = None
+    evidence_id: Optional[str] = None
 
     # Skip payment verification in test mode
     if not TEST_MODE:
@@ -488,6 +494,8 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
         is_valid = await payment_verifier.verify_payment(payment_header, WALLET_ADDRESS, PRICE_USDC)
         if not is_valid:
             raise HTTPException(status_code=402, detail="Payment verification failed")
+        payment_completed_at = datetime.utcnow().isoformat() + "Z"
+        evidence_id = str(uuid.uuid4())
 
     try:
         effective_api_url = payload.api_url or payload.target_api or "unknown"
@@ -544,6 +552,8 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
             category="infrastructure",
             daily_limit=payload.daily_limit
         )
+        decision_id = str(uuid.uuid4())
+        decision_completed_at = datetime.utcnow().isoformat() + "Z"
 
         # Log budget check
         await budget_db.log_budget_check(
@@ -568,6 +578,23 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
             "price_usdc": 0.05
         }
 
+        response_generated_at = datetime.utcnow().isoformat() + "Z"
+        print(json.dumps({
+            "event_type": "budget_decision_completed",
+            "test_mode": TEST_MODE,
+            "payment_status": "bypassed" if TEST_MODE else "completed",
+            "request_id": request_id,
+            "evidence_id": evidence_id,
+            "decision_id": decision_id,
+            "service": "agent-budget-guard",
+            "agent_id": payload.agent_id,
+            "approved": result.get("approved"),
+            "risk_level": result.get("risk_level"),
+            "requested_at": requested_at,
+            "payment_completed_at": payment_completed_at,
+            "decision_completed_at": decision_completed_at,
+            "response_generated_at": response_generated_at,
+        }, ensure_ascii=False, separators=(",", ":")))
         return result
     except Exception as e:
         print(f"[ERROR] Budget check failed: {e}")
