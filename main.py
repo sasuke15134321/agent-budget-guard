@@ -223,6 +223,12 @@ class BudgetCheckRequest(BaseModel):
     target_api: Optional[str] = Field(default=None, description="Target API URL (alias for api_url)")
     daily_limit: Optional[float] = Field(default=5.0, description="Daily spend limit in USDC")
     action_type: Optional[str] = Field(default=None, description="Action type")
+    correlation_id: Optional[str] = Field(
+        default=None,
+        max_length=128,
+        pattern=r"^[a-zA-Z0-9_\-\.]+$",
+        description="Client-provided series label for cross-stage correlation. Optional. Echoed in response and logged. Not a unique or authenticated identifier.",
+    )
 
 class RecordTransactionRequest(BaseModel):
     agent_id: Optional[str] = Field(default="default-agent", description="AI agent identifier")
@@ -265,6 +271,7 @@ class BudgetCheckResponse(BaseModel):
     risk_level: str
     warnings: List[str]
     next_recommended: NextRecommendation
+    correlation_id: Optional[str] = None
 
 class RecordTransactionResponse(BaseModel):
     recorded: bool
@@ -590,12 +597,13 @@ async def check_budget(payload: BudgetCheckRequest, request: Request):
             "agent_id": payload.agent_id,
             "approved": result.get("approved"),
             "risk_level": result.get("risk_level"),
+            "correlation_id": payload.correlation_id,
             "requested_at": requested_at,
             "payment_completed_at": payment_completed_at,
             "decision_completed_at": decision_completed_at,
             "response_generated_at": response_generated_at,
         }, ensure_ascii=False, separators=(",", ":")))
-        return result
+        return {**result, "correlation_id": payload.correlation_id}
     except Exception as e:
         print(f"[ERROR] Budget check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Budget check failed: {str(e)}")
