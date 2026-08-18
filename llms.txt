@@ -115,7 +115,7 @@ https://ai-agent-payment-safety-stack.onrender.com/okf/index.md
 
 Core gates: trust (Search Result Trust Check) / execution (Tool Approval Check) / payment (Payment Review)
 
-Overall flow: Tool Approval → Spending Policy → Payment Review → Budget Check → Evidence
+Budget-side local flow: Tool Approval → Spending Policy → Payment Review → Budget Check → Evidence
 
 Related OKF concepts:
 - https://ai-agent-payment-safety-stack.onrender.com/okf/materials/agent_spending_policy.md
