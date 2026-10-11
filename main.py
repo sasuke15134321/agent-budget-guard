@@ -912,7 +912,7 @@ async def mcp_server_card():
         "prompts": []
     }
 
-@app.post("/api/spending-policy/build", include_in_schema=True)
+@app.post("/api/spending-policy/build", include_in_schema=True, openapi_extra={"security": []})
 async def build_spending_policy(req: SpendingPolicyBuildRequest):
     """Build an AI-agent spending policy. Free, stateless, experimental."""
     policy_id = f"spending_policy_{uuid.uuid4()}"
