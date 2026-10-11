@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from x402.extensions.bazaar import declare_discovery_extension, OutputConfig
 import json
 import base64
 from datetime import datetime
@@ -102,34 +103,25 @@ _ENDPOINT_DESCRIPTIONS = {
 }
 
 # CDP Bazaar indexing extension for /api/budget/check
-_BAZAAR_EXTENSIONS = {
-    "bazaar": {
-        "info": {
-            "input": {
-                "type": "http",
-                "method": "POST",
-                "bodyType": "json",
-                "body": {
-                    "agent_id": "agent_001",
-                    "requested_amount": 0.03,
-                    "currency": "USDC",
-                    "target_api": "https://example.com/api/paid",
-                    "action_type": "x402_payment"
-                }
-            },
-            "output": {
-                "type": "json",
-                "example": {
-                    "allow": True,
-                    "approval_required": False,
-                    "remaining_budget": 0.97,
-                    "audit_status": "ready",
-                    "risk_level": "low",
-                    "next_recommended": "proceed_with_x402_payment"
-                }
-            }
+_BAZAAR_EXTENSIONS = declare_discovery_extension(
+    input={
+        "agent_id": "agent_001",
+        "requested_amount": 0.03,
+        "currency": "USDC",
+        "target_api": "https://example.com/api/paid",
+        "action_type": "x402_payment",
+    },
+    body_type="json",
+    output=OutputConfig(
+        example={
+            "allow": True,
+            "approval_required": False,
+            "remaining_budget": 0.97,
+            "audit_status": "ready",
+            "risk_level": "low",
+            "next_recommended": "proceed_with_x402_payment",
         },
-        "schema": {
+        schema={
             "type": "object",
             "properties": {
                 "allow": {"type": "boolean"},
@@ -137,11 +129,12 @@ _BAZAAR_EXTENSIONS = {
                 "remaining_budget": {"type": "number"},
                 "audit_status": {"type": "string"},
                 "risk_level": {"type": "string"},
-                "next_recommended": {"type": "string"}
-            }
-        }
-    }
-}
+                "next_recommended": {"type": "string"},
+            },
+        },
+    ),
+)
+_BAZAAR_EXTENSIONS["bazaar"]["info"]["input"]["method"] = "POST"
 
 @app.middleware("http")
 async def x402_payment_middleware(request: Request, call_next):
