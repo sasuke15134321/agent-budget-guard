@@ -270,6 +270,21 @@ class PaymentVerifier:
                 settle_data = settle_resp.json()
                 print(f"[x402/CDP] settle status={settle_resp.status_code} success={settle_data.get('success')}")
 
+                # Facilitator extension outcome is an optional base64-encoded JSON header.
+                # Never log signatures, JWTs, or raw payment payloads.
+                import base64
+                import json
+                extension_header = settle_resp.headers.get("EXTENSION-RESPONSES")
+                if extension_header:
+                    try:
+                        extension_data = json.loads(base64.b64decode(extension_header).decode("utf-8"))
+                        bazaar_result = extension_data.get("bazaar", {})
+                        print(f"[x402/CDP] bazaar status={bazaar_result.get('status', 'unknown')} reason={bazaar_result.get('rejectedReason', '')}")
+                    except (ValueError, TypeError, UnicodeDecodeError) as exc:
+                        print(f"[x402/CDP] bazaar response could not be decoded: {type(exc).__name__}")
+                else:
+                    print("[x402/CDP] EXTENSION-RESPONSES header absent (not proof of failure)")
+
                 if settle_data.get("success"):
                     tx = settle_data.get("transaction", "")
                     print(f"[OK] Payment settled via CDP Facilitator: {expected_amount} USDC tx={tx}")
