@@ -96,7 +96,7 @@ _PAID_ENDPOINTS = {
 }
 
 _ENDPOINT_DESCRIPTIONS = {
-    "/api/budget/check":    "Check budget and approve/deny AI agent spending with x402 payment verification",
+    "/api/budget/check":    "Agent Budget Guard: pre-payment budget check, spending limits, allow/deny approval and audit evidence for AI agent x402 USDC payments",
     "/api/budget/record":   "Record a budget transaction for an AI agent",
     "/api/record-payment":  "Log a completed x402 payment",
     "/api/classify-invoice": "Classify an invoice or payment record for tax/accounting purposes",
@@ -173,6 +173,7 @@ async def x402_payment_middleware(request: Request, call_next):
                     "method": method,
                     "description": _ENDPOINT_DESCRIPTIONS.get(path, "Paid API endpoint"),
                     "mimeType": "application/json",
+                    **({"serviceName": "Agent Budget Guard", "tags": ["ai-agents", "budget", "spend-control", "x402", "audit"]} if path == "/api/budget/check" else {}),
                 },
                 "accepts": [_accept],
             }
